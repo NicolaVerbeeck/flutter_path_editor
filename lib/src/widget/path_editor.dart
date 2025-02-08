@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:path_editor/src/model/path_operators.dart';
 import 'package:path_editor/src/painting/path_painter.dart';
@@ -8,8 +9,13 @@ import 'package:path_editor/src/painting/segment_painter.dart';
 
 class PathEditor extends StatefulWidget {
   final String path;
+  final void Function(String) onPathChanged;
 
-  const PathEditor({super.key, required this.path});
+  const PathEditor({
+    super.key,
+    required this.path,
+    required this.onPathChanged,
+  });
 
   @override
   State<PathEditor> createState() => _PathEditorState();
@@ -29,6 +35,8 @@ class _PathEditorState extends State<PathEditor> {
   int? _highlightedSegment;
   Offset? _indicatorPosition;
   var _controlPoints = <Offset>[];
+  var _cursor = SystemMouseCursors.basic;
+  int? _selectedControlPointIndex;
 
   @override
   void initState() {
@@ -48,17 +56,13 @@ class _PathEditorState extends State<PathEditor> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onHover: (details) {
-        final index = _findClosestSegmentIndex(details.localPosition);
-        final indicatorPosition =
-            _calculateIndicatorPosition(details.localPosition, index);
-        setState(() {
-          _highlightedSegment = index;
-          _indicatorPosition = indicatorPosition;
-        });
-      },
+      cursor: _cursor,
+      onHover: _handleHover,
       child: GestureDetector(
-        onTapDown: (details) => _handleCanvasTap(details.localPosition),
+        onTapDown: _handleTapDown,
+        onPanStart: _handlePanStart,
+        onPanUpdate: _handlePanUpdate,
+        onPanEnd: _handlePanEnd,
         child: Stack(
           children: [
             Positioned.fill(
@@ -92,6 +96,92 @@ class _PathEditorState extends State<PathEditor> {
     );
   }
 
+  void _handleHover(PointerHoverEvent details) {
+    final controlPointIndex =
+        _findNearestControlPointIndex(details.localPosition);
+    if (controlPointIndex != null) {
+      setState(() {
+        _cursor = _selectedControlPointIndex == controlPointIndex
+            ? SystemMouseCursors.grab
+            : SystemMouseCursors.click;
+        _highlightedSegment = null;
+        _indicatorPosition = null;
+      });
+      return;
+    }
+
+    final nearestPointIndex = _findNearestIndex(details.localPosition);
+    if (nearestPointIndex != null) {
+      final newCursor = _selectedIndex == nearestPointIndex
+          ? SystemMouseCursors.grab
+          : SystemMouseCursors.click;
+
+      setState(() {
+        _cursor = newCursor;
+        _highlightedSegment = null;
+        _indicatorPosition = null;
+      });
+      return;
+    }
+
+    final index = _findClosestSegmentIndex(details.localPosition);
+    final indicatorPosition =
+        _calculateIndicatorPosition(details.localPosition, index);
+    setState(() {
+      _cursor = SystemMouseCursors.basic;
+      _highlightedSegment = index;
+      _indicatorPosition = indicatorPosition;
+    });
+  }
+
+  void _handleTapDown(TapDownDetails details) {
+    final controlPointIndex =
+        _findNearestControlPointIndex(details.localPosition);
+    if (controlPointIndex != null) {
+      setState(() {
+        _selectedControlPointIndex = controlPointIndex;
+        _cursor = SystemMouseCursors.grab;
+      });
+      return;
+    }
+    _handleCanvasTap(details.localPosition);
+  }
+
+  void _handlePanStart(DragStartDetails details) {
+    if (_selectedIndex != null || _selectedControlPointIndex != null) {
+      setState(() {
+        _cursor = SystemMouseCursors.grabbing;
+      });
+    }
+  }
+
+  void _handlePanUpdate(DragUpdateDetails details) {
+    if (_selectedControlPointIndex != null) {
+      setState(() {
+        _updateControlPointPosition(
+            _selectedControlPointIndex!, details.localPosition);
+      });
+    } else if (_selectedIndex != null) {
+      setState(() {
+        _updateOperatorPosition(_selectedIndex!, details.localPosition);
+        _updatePathPoints();
+      });
+    }
+  }
+
+  void _handlePanEnd(DragEndDetails details) {
+    if (_selectedIndex != null || _selectedControlPointIndex != null) {
+      setState(() {
+        _cursor = SystemMouseCursors.grab;
+      });
+      _notifyPathChanged();
+    }
+  }
+
+  void _notifyPathChanged() {
+    widget.onPathChanged(_operators.map((e) => e.toSvg()).join(' '));
+  }
+
   void _updatePathPoints() {
     _points = _operators
         .map(
@@ -106,12 +196,22 @@ class _PathEditorState extends State<PathEditor> {
     // TODO update _controlPoints
   }
 
-  static const _pointHitRadius = 20.0;
+  static const _pointHitRadius = 10.0;
 
   int? _findNearestIndex(Offset position) {
     final scaledPosition = position;
     for (int i = 0; i < _points.length; i++) {
       if ((scaledPosition - _points[i].offset).distanceSquared <
+          _pointHitRadius * _pointHitRadius) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  int? _findNearestControlPointIndex(Offset position) {
+    for (int i = 0; i < _controlPoints.length; i++) {
+      if ((position - _controlPoints[i]).distanceSquared <
           _pointHitRadius * _pointHitRadius) {
         return i;
       }
@@ -148,13 +248,17 @@ class _PathEditorState extends State<PathEditor> {
           _selectedIndex = null;
           _controlPoints = [];
         });
+        _notifyPathChanged();
         return;
       }
     }
 
     setState(() {
       _selectedIndex = point;
+      _selectedControlPointIndex = null;
       _controlPoints = controlPoints;
+      _cursor =
+          point != null ? SystemMouseCursors.grab : SystemMouseCursors.basic;
     });
   }
 
@@ -260,5 +364,58 @@ class _PathEditorState extends State<PathEditor> {
     p += p3 * ttt; // t^3 * p3
 
     return p;
+  }
+
+  void _updateOperatorPosition(int index, Offset newPosition) {
+    final point = _points[index];
+    final updatedOperators = [..._operators];
+
+    switch (point.source) {
+      case MoveTo():
+        updatedOperators[_operators.indexOf(point.source)] =
+            MoveTo(x: newPosition.dx, y: newPosition.dy);
+      case LineTo():
+        updatedOperators[_operators.indexOf(point.source)] =
+            LineTo(x: newPosition.dx, y: newPosition.dy);
+      case CubicTo(x1: var x1, y1: var y1, x2: var x2, y2: var y2):
+        updatedOperators[_operators.indexOf(point.source)] = CubicTo(
+            x1: x1,
+            y1: y1,
+            x2: x2,
+            y2: y2,
+            x3: newPosition.dx,
+            y3: newPosition.dy);
+      case Close():
+      // Do nothing for close operator
+    }
+
+    _operators = updatedOperators;
+  }
+
+  void _updateControlPointPosition(int index, Offset newPosition) {
+    if (_selectedIndex == null) return;
+
+    final point = _points[_selectedIndex!];
+    if (point.source case CubicTo()) {
+      final updatedOperators = [..._operators];
+      final opIndex = _operators.indexOf(point.source);
+
+      final pointSource = point.source as CubicTo;
+
+      updatedOperators[opIndex] = CubicTo(
+        x1: index == 0 ? newPosition.dx : pointSource.x1,
+        y1: index == 0 ? newPosition.dy : pointSource.y1,
+        x2: index == 1 ? newPosition.dx : pointSource.x2,
+        y2: index == 1 ? newPosition.dy : pointSource.y2,
+        x3: pointSource.x3,
+        y3: pointSource.y3,
+      );
+
+      setState(() {
+        _operators = updatedOperators;
+        _updatePathPoints();
+        _controlPoints[index] = newPosition;
+      });
+    }
   }
 }

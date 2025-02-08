@@ -15,7 +15,12 @@ void main() {
           child: SizedBox(
             width: 400,
             height: 400,
-            child: PathEditor(path: scaledPath),
+            child: PathEditor(
+              path: scaledPath,
+              onPathChanged: (path) {
+                print(path);
+              },
+            ),
           ),
         ),
       ),
