@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:path_editor/src/model/editing.dart';
 
 class PointsPainter extends CustomPainter {
   final List<Offset> _points;
-  final int? _selectedIndex;
+  final PathPointIndex? _selectedIndex;
   final List<Offset> _controlPoints;
 
   const PointsPainter({
     required List<Offset> points,
-    required int? selectedIndex,
+    required PathPointIndex? selectedIndex,
     required List<Offset> controlPoints,
   })  : _points = points,
         _selectedIndex = selectedIndex,
@@ -28,8 +29,9 @@ class PointsPainter extends CustomPainter {
         );
       }
     }
-    if (_selectedIndex != null) {
-      final point = _points[_selectedIndex];
+    final selectedIndex = _selectedIndex?.value;
+    if (selectedIndex != null) {
+      final point = _points[selectedIndex];
       canvas.drawCircle(
         point,
         5,

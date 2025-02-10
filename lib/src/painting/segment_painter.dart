@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:path_editor/src/model/editing.dart';
 import 'package:path_editor/src/model/path_operators.dart';
 
 class SegmentPainter extends CustomPainter {
   final List<PathOperator> _operators;
-  final int? _segmentIndex;
+  final PathSegmentIndex? _segmentIndex;
   final Offset? _indicatorPosition;
 
   SegmentPainter(
@@ -14,16 +15,17 @@ class SegmentPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (_segmentIndex == null) {
+    final segmentIndex = _segmentIndex?.value;
+    if (segmentIndex == null) {
       return;
     }
-    if (_segmentIndex + 1 >= _operators.length) {
+    if (segmentIndex + 1 >= _operators.length) {
       return;
     }
-    final start = _getCommandEndpoint(_operators[_segmentIndex], Offset.zero);
+    final start = _getCommandEndpoint(_operators[segmentIndex], Offset.zero);
     final path = Path();
     path.moveTo(start.dx, start.dy);
-    _operators[_segmentIndex + 1].map(
+    _operators[segmentIndex + 1].map(
       moveTo: (m) => path.moveTo(m.x, m.y),
       lineTo: (l) => path.lineTo(l.x, l.y),
       cubicTo: (c) => path.cubicTo(c.x1, c.y1, c.x2, c.y2, c.x3, c.y3),

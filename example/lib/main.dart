@@ -15,15 +15,52 @@ void main() {
           child: SizedBox(
             width: 400,
             height: 400,
-            child: PathEditor(
-              path: scaledPath,
-              onPathChanged: (path) {
-                print(path);
-              },
-            ),
+            child: App(initialPath: scaledPath),
           ),
         ),
       ),
     ),
   );
+}
+
+class App extends StatefulWidget {
+  final String initialPath;
+
+  const App({super.key, required this.initialPath});
+
+  @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  late final PathEditorController controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    controller = PathEditorController(widget.initialPath);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // Background content
+        Positioned.fill(
+          child: FilledPath(
+            controller: controller,
+            color: Colors.blue.withOpacity(0.5),
+            blendMode: BlendMode.srcOver,
+          ),
+        ),
+        // Path editor on top
+        Positioned.fill(
+          child: PathEditor(
+            controller: controller,
+          ),
+        ),
+      ],
+    );
+  }
 }
