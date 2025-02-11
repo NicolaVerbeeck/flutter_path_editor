@@ -16,8 +16,10 @@ class PointsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final selectedIndex = _selectedIndex?.value ?? -1;
+
     for (var index = 0; index < _points.length; ++index) {
-      final isSelected = index == _selectedIndex;
+      final isSelected = index == selectedIndex;
       if (!isSelected) {
         final point = _points[index];
         canvas.drawCircle(
@@ -29,8 +31,7 @@ class PointsPainter extends CustomPainter {
         );
       }
     }
-    final selectedIndex = _selectedIndex?.value;
-    if (selectedIndex != null) {
+    if (selectedIndex >= 0) {
       final point = _points[selectedIndex];
       canvas.drawCircle(
         point,
