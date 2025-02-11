@@ -3,26 +3,32 @@ import 'dart:ui';
 import 'package:path_editor/src/model/editing.dart';
 import 'package:path_editor/src/model/path_operators.dart';
 
-PathPointIndex? findNearestIndex(List<Offset> points,Offset position, double hitRadiusSquared,) {
-    final scaledPosition = position;
-    for (int i = 0; i < points.length; ++i) {
-      if ((scaledPosition - points[i]).distanceSquared <
-          hitRadiusSquared) {
-        return PathPointIndex(i);
-      }
+PathPointIndex? findNearestIndex(
+  List<Offset> points,
+  Offset position,
+  double hitRadiusSquared,
+) {
+  final scaledPosition = position;
+  for (int i = 0; i < points.length; ++i) {
+    if ((scaledPosition - points[i]).distanceSquared < hitRadiusSquared) {
+      return PathPointIndex(i);
     }
-    return null;
   }
+  return null;
+}
 
-  ControlPointIndex? findNearestControlPointIndex(List<Offset> points,Offset position, double hitRadiusSquared,) {
-    for (int i = 0; i < points.length; ++i) {
-      if ((position - points[i]).distanceSquared <
-          hitRadiusSquared) {
-        return ControlPointIndex(i);
-      }
+ControlPointIndex? findNearestControlPointIndex(
+  List<Offset> points,
+  Offset position,
+  double hitRadiusSquared,
+) {
+  for (int i = 0; i < points.length; ++i) {
+    if ((position - points[i]).distanceSquared < hitRadiusSquared) {
+      return ControlPointIndex(i);
     }
-    return null;
   }
+  return null;
+}
 
 PathSegmentIndex? findClosestSegment(
     List<PathOperator> operators, Offset point) {

@@ -29,6 +29,15 @@ sealed class PathOperator {
 }
 
 extension PathOpListExt on List<PathOperator> {
+  bool deepEquals(List<PathOperator> other) {
+    if (length != other.length) return false;
+
+    for (var i = 0; i < length; ++i) {
+      if (this[i] != other[i]) return false;
+    }
+    return true;
+  }
+
   String toSvg() => map((op) => op.toSvg()).join(' ');
 
   void switchMap<T>({
@@ -75,6 +84,14 @@ class MoveTo extends PathOperator {
 
   @override
   String toSvg() => 'M $x $y';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MoveTo && x == other.x && y == other.y);
+
+  @override
+  int get hashCode => x.hashCode ^ y.hashCode;
 }
 
 @immutable
@@ -86,6 +103,14 @@ class LineTo extends PathOperator {
 
   @override
   String toSvg() => 'L $x $y';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LineTo && x == other.x && y == other.y);
+
+  @override
+  int get hashCode => x.hashCode ^ y.hashCode;
 }
 
 @immutable
@@ -108,6 +133,26 @@ class CubicTo extends PathOperator {
 
   @override
   String toSvg() => 'C $x1 $y1 $x2 $y2 $x3 $y3';
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CubicTo &&
+          x1 == other.x1 &&
+          y1 == other.y1 &&
+          x2 == other.x2 &&
+          y2 == other.y2 &&
+          x3 == other.x3 &&
+          y3 == other.y3);
+
+  @override
+  int get hashCode =>
+      x1.hashCode ^
+      y1.hashCode ^
+      x2.hashCode ^
+      y2.hashCode ^
+      x3.hashCode ^
+      y3.hashCode;
 }
 
 class Close extends PathOperator {
@@ -115,6 +160,12 @@ class Close extends PathOperator {
 
   @override
   String toSvg() => 'Z';
+
+  @override
+  bool operator ==(Object other) => identical(this, other);
+
+  @override
+  int get hashCode => 0;
 }
 
 class _PathProxy implements PathProxy {

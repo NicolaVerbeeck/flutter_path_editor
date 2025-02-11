@@ -72,7 +72,7 @@ class _PathEditorState extends State<PathEditor> {
       _selectedIndex = null;
       _selectedControlPointIndex = null;
     }
-    
+
     _rebuildControlPoints();
   }
 
@@ -218,7 +218,7 @@ class _PathEditorState extends State<PathEditor> {
         ? []
         : widget._controller.controlPointsAt(_selectedIndex!);
 
-        // Check if the selected control point is still valid
+    // Check if the selected control point is still valid
     if (_selectedControlPointIndex != null &&
         _selectedControlPointIndex!.value >= _controlPoints.length) {
       _selectedControlPointIndex = null;

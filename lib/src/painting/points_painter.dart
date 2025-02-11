@@ -54,5 +54,16 @@ class PointsPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true; // TODO
+  bool shouldRepaint(covariant PointsPainter oldDelegate) =>
+      !_deepEquals(_points, oldDelegate._points) ||
+      _selectedIndex != oldDelegate._selectedIndex ||
+      !_deepEquals(_controlPoints, oldDelegate._controlPoints);
+}
+
+bool _deepEquals(List<Offset> a, List<Offset> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; ++i) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }

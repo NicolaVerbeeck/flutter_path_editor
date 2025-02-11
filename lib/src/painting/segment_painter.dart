@@ -53,7 +53,10 @@ class SegmentPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true; // TODO
+  bool shouldRepaint(covariant SegmentPainter oldDelegate) =>
+      !_operators.deepEquals(oldDelegate._operators) ||
+      _segmentIndex != oldDelegate._segmentIndex ||
+      _indicatorPosition != oldDelegate._indicatorPosition;
 
   Offset _getCommandEndpoint(PathOperator command, Offset current) {
     return command.map(

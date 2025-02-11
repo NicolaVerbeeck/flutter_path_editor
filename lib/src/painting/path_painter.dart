@@ -22,7 +22,8 @@ class PathPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true; // TODO
+  bool shouldRepaint(covariant PathPainter oldDelegate) =>
+      !_operations.deepEquals(oldDelegate._operations);
 
   Path _buildPath(double scaleX, double scaleY) {
     final path = Path();
