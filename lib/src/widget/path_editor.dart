@@ -14,12 +14,36 @@ class PathEditor extends StatefulWidget {
   final PathEditorController _controller;
   final double _pointHitRadius;
   final double _controlPointHitRadius;
+  final double controlPointStrokeWidth;
+  final double controlPointRadius;
+  final double selectedPointRadius;
+  final double unselectedPointRadius;
+
+  // Add new visual customization properties
+  final Color strokeColor;
+  final double strokeWidth;
+  final BlendMode blendMode;
+  final Color indicatorColor;
+  final Color controlPointColor;
+  final Color selectedPointColor;
+  final Color unselectedPointColor;
 
   const PathEditor({
     super.key,
     required PathEditorController controller,
     double pointHitRadius = _defaiultPointHitRadius,
     double controlPointHitRadius = _defaultControlPointHitRadius,
+    this.strokeColor = Colors.black,
+    this.strokeWidth = 2.0,
+    this.blendMode = BlendMode.srcOver,
+    this.indicatorColor = Colors.blue,
+    this.controlPointColor = Colors.green,
+    this.selectedPointColor = Colors.red,
+    this.unselectedPointColor = Colors.black,
+    this.controlPointStrokeWidth = 2.0,
+    this.controlPointRadius = 5.0,
+    this.selectedPointRadius = 8.0,
+    this.unselectedPointRadius = 5.0,
   })  : _controller = controller,
         _pointHitRadius = pointHitRadius,
         _controlPointHitRadius = controlPointHitRadius;
@@ -92,6 +116,9 @@ class _PathEditorState extends State<PathEditor> {
               child: CustomPaint(
                 painter: PathPainter(
                   operators: widget._controller.operators,
+                  strokeColor: widget.strokeColor,
+                  strokeWidth: widget.strokeWidth,
+                  blendMode: widget.blendMode,
                 ),
               ),
             ),
@@ -101,6 +128,8 @@ class _PathEditorState extends State<PathEditor> {
                   widget._controller.operators,
                   _highlightedSegment,
                   _indicatorPosition,
+                  // indicatorColor: widget.indicatorColor,
+                  // blendMode: widget.blendMode,
                 ),
               ),
             ),
@@ -110,6 +139,14 @@ class _PathEditorState extends State<PathEditor> {
                   points: _points,
                   selectedIndex: _selectedIndex,
                   controlPoints: _controlPoints,
+                  controlPointColor: widget.controlPointColor,
+                  selectedPointColor: widget.selectedPointColor,
+                  unselectedPointColor: widget.unselectedPointColor,
+                  blendMode: widget.blendMode,
+                  controlPointStrokeWidth: widget.controlPointStrokeWidth,
+                  controlPointRadius: widget.controlPointRadius,
+                  selectedPointRadius: widget.selectedPointRadius,
+                  unselectedPointRadius: widget.unselectedPointRadius,
                 ),
               ),
             ),

@@ -5,14 +5,38 @@ class PointsPainter extends CustomPainter {
   final List<Offset> _points;
   final PathPointIndex? _selectedIndex;
   final List<Offset> _controlPoints;
+  final Color _controlPointColor;
+  final Color _selectedPointColor;
+  final Color _unselectedPointColor;
+  final BlendMode _blendMode;
+  final double _controlPointStrokeWidth;
+  final double _controlPointRadius;
+  final double _selectedPointRadius;
+  final double _unselectedPointRadius;
 
   const PointsPainter({
     required List<Offset> points,
     required PathPointIndex? selectedIndex,
     required List<Offset> controlPoints,
+    required Color controlPointColor,
+    required Color selectedPointColor,
+    required Color unselectedPointColor,
+    required BlendMode blendMode,
+    required double controlPointStrokeWidth,
+    required double controlPointRadius,
+    required double selectedPointRadius,
+    required double unselectedPointRadius,
   })  : _points = points,
         _selectedIndex = selectedIndex,
-        _controlPoints = controlPoints;
+        _controlPoints = controlPoints,
+        _controlPointColor = controlPointColor,
+        _selectedPointColor = selectedPointColor,
+        _unselectedPointColor = unselectedPointColor,
+        _blendMode = blendMode,
+        _controlPointStrokeWidth = controlPointStrokeWidth,
+        _controlPointRadius = controlPointRadius,
+        _selectedPointRadius = selectedPointRadius,
+        _unselectedPointRadius = unselectedPointRadius;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -24,10 +48,11 @@ class PointsPainter extends CustomPainter {
         final point = _points[index];
         canvas.drawCircle(
           point,
-          5,
+          _unselectedPointRadius,
           Paint()
-            ..color = Colors.blue
-            ..style = PaintingStyle.fill,
+            ..color = _unselectedPointColor
+            ..style = PaintingStyle.fill
+            ..blendMode = _blendMode,
         );
       }
     }
@@ -35,20 +60,22 @@ class PointsPainter extends CustomPainter {
       final point = _points[selectedIndex];
       canvas.drawCircle(
         point,
-        5,
+        _selectedPointRadius,
         Paint()
-          ..color = Colors.yellow
-          ..style = PaintingStyle.fill,
+          ..color = _selectedPointColor
+          ..style = PaintingStyle.fill
+          ..blendMode = _blendMode,
       );
     }
     for (final control in _controlPoints) {
       canvas.drawCircle(
         control,
-        3,
+        _controlPointRadius,
         Paint()
-          ..color = Colors.blue
+          ..color = _controlPointColor
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2,
+          ..strokeWidth = _controlPointStrokeWidth
+          ..blendMode = _blendMode,
       );
     }
   }
