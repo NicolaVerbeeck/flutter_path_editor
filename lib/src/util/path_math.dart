@@ -1,4 +1,4 @@
-import 'dart:math';
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:path_editor/src/model/editing.dart';
 import 'package:path_editor/src/model/path_operators.dart';
@@ -31,7 +31,10 @@ ControlPointIndex? findNearestControlPointIndex(
 }
 
 PathSegmentIndex? findClosestSegment(
-    List<PathOperator> operators, Offset point) {
+  List<PathOperator> operators,
+  Offset point,
+  double maxDistance,
+) {
   if (operators.length < 2) return null;
 
   double minDistance = double.infinity;
@@ -57,6 +60,9 @@ PathSegmentIndex? findClosestSegment(
     }
 
     current = end;
+  }
+  if (minDistance > maxDistance) {
+    return null;
   }
 
   return closestIndex == null ? null : PathSegmentIndex(closestIndex);
@@ -205,7 +211,7 @@ double _adaptiveDistanceToCubic(
     depth + 1,
   );
 
-  return min(d1, d2);
+  return math.min(d1, d2);
 }
 
 double _getCurveFlatness(
@@ -219,7 +225,7 @@ double _getCurveFlatness(
   final vx = 3 * p2.dx - 2 * p3.dx - p0.dx;
   final vy = 3 * p2.dy - 2 * p3.dy - p0.dy;
 
-  return max(ux * ux + uy * uy, vx * vx + vy * vy);
+  return math.max(ux * ux + uy * uy, vx * vx + vy * vy);
 }
 
 ((Offset, Offset, Offset, Offset), (Offset, Offset, Offset, Offset))

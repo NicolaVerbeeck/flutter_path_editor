@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:path_editor/path_editor.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   const path =
@@ -34,6 +36,8 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   late final PathEditorController controller;
+  final TransformationController _transformationController =
+      TransformationController();
 
   @override
   void initState() {
@@ -43,24 +47,75 @@ class _AppState extends State<App> {
   }
 
   @override
+  void dispose() {
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Background content
-        Positioned.fill(
-          child: FilledPath(
-            controller: controller,
-            color: Colors.blue.withOpacity(0.5),
-            blendMode: BlendMode.srcOver,
-          ),
+    return Listener(
+      onPointerSignal: (pointerSignal) {
+        if (pointerSignal is PointerScrollEvent) {
+          // Check if shift key is pressed for horizontal pan
+          if (pointerSignal.scrollDelta.dx != 0 ||
+              pointerSignal.scrollDelta.dy != 0) {
+            if (HardwareKeyboard.instance.isShiftPressed) {
+              // Pan horizontally
+              final delta = pointerSignal.scrollDelta.dy;
+              final matrix = Matrix4.identity()..translate(-delta);
+              _transformationController.value =
+                  matrix * _transformationController.value;
+            } else if (HardwareKeyboard.instance.isControlPressed) {
+              // Zoom (existing code)
+              final delta = pointerSignal.scrollDelta.dy;
+              final scaleChange = delta > 0 ? 0.95 : 1.05;
+
+              final box = context.findRenderObject() as RenderBox;
+              final localPosition = box.globalToLocal(pointerSignal.position);
+
+              final matrix = Matrix4.identity()
+                ..translate(localPosition.dx, localPosition.dy)
+                ..scale(scaleChange)
+                ..translate(-localPosition.dx, -localPosition.dy);
+
+              _transformationController.value =
+                  matrix * _transformationController.value;
+            } else {
+              // Normal panning
+              final matrix = Matrix4.identity()
+                ..translate(-pointerSignal.scrollDelta.dx,
+                    -pointerSignal.scrollDelta.dy);
+              _transformationController.value =
+                  matrix * _transformationController.value;
+            }
+          }
+        }
+      },
+      child: InteractiveViewer(
+        transformationController: _transformationController,
+        boundaryMargin: const EdgeInsets.all(double.infinity),
+        minScale: 0.1,
+        maxScale: 10.0,
+        child: Stack(
+          children: [
+            // Background content
+            Positioned.fill(
+              child: FilledPath(
+                controller: controller,
+                color: Colors.blue.withOpacity(0.5),
+                blendMode: BlendMode.srcOver,
+              ),
+            ),
+            // Path editor on top
+            Positioned.fill(
+              child: PathEditor(
+                controller: controller,
+              ),
+            ),
+          ],
         ),
-        // Path editor on top
-        Positioned.fill(
-          child: PathEditor(
-            controller: controller,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }

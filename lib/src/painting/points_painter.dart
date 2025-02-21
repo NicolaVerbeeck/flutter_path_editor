@@ -42,6 +42,43 @@ class PointsPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final selectedIndex = _selectedIndex?.value ?? -1;
 
+    // Draw lines to control points first (so they appear behind the points)
+    if (selectedIndex >= 0 && _controlPoints.isNotEmpty) {
+      // Draw lines from previous point if it exists
+      if (selectedIndex > 0 && _controlPoints.isNotEmpty) {
+        final prevPoint = _points[selectedIndex - 1];
+        final controlPoint = _controlPoints[0];
+        final direction = (controlPoint - prevPoint) / (controlPoint - prevPoint).distance;
+        final adjustedEnd = controlPoint - direction * _controlPointRadius;
+
+        canvas.drawLine(
+          prevPoint,
+          adjustedEnd,
+          Paint()
+            ..color = _controlPointColor.withAlpha(127)
+            ..strokeWidth = _controlPointStrokeWidth / 2
+            ..blendMode = _blendMode,
+        );
+      }
+
+      // Draw lines from selected point
+      if (_controlPoints.length > 1) {
+        final selectedPoint = _points[selectedIndex];
+        final controlPoint = _controlPoints[1];
+        final direction = (controlPoint - selectedPoint) / (controlPoint - selectedPoint).distance;
+        final adjustedEnd = controlPoint - direction * _controlPointRadius;
+
+        canvas.drawLine(
+          selectedPoint,
+          adjustedEnd,
+          Paint()
+            ..color = _controlPointColor.withAlpha(127)
+            ..strokeWidth = _controlPointStrokeWidth / 2
+            ..blendMode = _blendMode,
+        );
+      }
+    }
+
     for (var index = 0; index < _points.length; ++index) {
       final isSelected = index == selectedIndex;
       if (!isSelected) {

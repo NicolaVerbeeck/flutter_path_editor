@@ -10,15 +10,16 @@ import 'package:path_editor/src/util/path_math.dart';
 class PathEditor extends StatefulWidget {
   static const _defaiultPointHitRadius = 10.0;
   static const _defaultControlPointHitRadius = 10.0;
+  static const _defaultMinSegmentDistance = 20.0;
 
   final PathEditorController _controller;
   final double _pointHitRadius;
   final double _controlPointHitRadius;
+  final double _minSegmentDistance;
   final double controlPointStrokeWidth;
   final double controlPointRadius;
   final double selectedPointRadius;
   final double unselectedPointRadius;
-
   // Add new visual customization properties
   final Color strokeColor;
   final double strokeWidth;
@@ -33,6 +34,7 @@ class PathEditor extends StatefulWidget {
     required PathEditorController controller,
     double pointHitRadius = _defaiultPointHitRadius,
     double controlPointHitRadius = _defaultControlPointHitRadius,
+    double minSegmentDistance = _defaultMinSegmentDistance,
     this.strokeColor = Colors.black,
     this.strokeWidth = 2.0,
     this.blendMode = BlendMode.srcOver,
@@ -46,7 +48,8 @@ class PathEditor extends StatefulWidget {
     this.unselectedPointRadius = 5.0,
   })  : _controller = controller,
         _pointHitRadius = pointHitRadius,
-        _controlPointHitRadius = controlPointHitRadius;
+        _controlPointHitRadius = controlPointHitRadius,
+        _minSegmentDistance = minSegmentDistance;
 
   @override
   State<PathEditor> createState() => _PathEditorState();
@@ -176,8 +179,7 @@ class _PathEditorState extends State<PathEditor> {
       return;
     }
 
-    // Check if we are hovering over a point. If it is the selected point,
-    // we should show the grab cursor, otherwise we should show the click cursor
+    // Check if we are hovering over a point
     final nearestPointIndex =
         findNearestIndex(_points, localPosition, widget._pointHitRadius);
     if (nearestPointIndex != null) {
@@ -193,11 +195,11 @@ class _PathEditorState extends State<PathEditor> {
       return;
     }
 
-    // Find a segment we are hovering over. If we have a segment, show the
-    // indicator for that segment
+    // Find a segment we are hovering over
     final index = findClosestSegment(
       widget._controller.operators,
       details.localPosition,
+      widget._minSegmentDistance,
     );
     final indicatorPosition = index == null
         ? null
@@ -208,7 +210,7 @@ class _PathEditorState extends State<PathEditor> {
           );
     setState(() {
       _cursor = SystemMouseCursors.basic;
-      _highlightedSegment = index;
+      _highlightedSegment = indicatorPosition != null ? index : null;
       _indicatorPosition = indicatorPosition;
     });
   }
