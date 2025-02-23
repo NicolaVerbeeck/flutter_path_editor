@@ -1,3 +1,4 @@
+import 'package:example/filled_path.dart';
 import 'package:flutter/material.dart';
 import 'package:path_editor/path_editor.dart';
 import 'package:flutter/gestures.dart';
@@ -103,7 +104,7 @@ class _AppState extends State<App> {
             Positioned.fill(
               child: FilledPath(
                 controller: controller,
-                color: Colors.blue.withOpacity(0.5),
+                color: Colors.blue.withAlpha(127),
                 blendMode: BlendMode.srcOver,
               ),
             ),

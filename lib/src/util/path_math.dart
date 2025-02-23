@@ -100,7 +100,7 @@ Offset? calculateIndicatorPosition(
       final p0 = start;
       final p1 = Offset(c.x1, c.y1);
       final p2 = Offset(c.x2, c.y2);
-      final p3 = Offset(c.x3, c.y3);
+      final p3 = Offset(c.x, c.y);
 
       // Find the closest point on the cubic Bezier curve
       double minDistance = double.infinity;
@@ -160,7 +160,7 @@ double _distanceToCubicSegment(
   final p0 = start;
   final p1 = Offset(cubic.x1, cubic.y1);
   final p2 = Offset(cubic.x2, cubic.y2);
-  final p3 = Offset(cubic.x3, cubic.y3);
+  final p3 = Offset(cubic.x, cubic.y);
 
   // Use adaptive subdivision for better performance
   return _adaptiveDistanceToCubic(point, p0, p1, p2, p3, 0, 1);
@@ -252,7 +252,7 @@ Offset _getCommandEndpoint(PathOperator command, Offset current) {
   return command.map(
     moveTo: (m) => Offset(m.x, m.y),
     lineTo: (l) => Offset(l.x, l.y),
-    cubicTo: (c) => Offset(c.x3, c.y3),
+    cubicTo: (c) => Offset(c.x, c.y),
     close: (_) => current,
   );
 }

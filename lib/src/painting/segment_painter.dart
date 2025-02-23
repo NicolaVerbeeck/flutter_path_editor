@@ -28,7 +28,7 @@ class SegmentPainter extends CustomPainter {
     _operators[segmentIndex + 1].map(
       moveTo: (m) => path.moveTo(m.x, m.y),
       lineTo: (l) => path.lineTo(l.x, l.y),
-      cubicTo: (c) => path.cubicTo(c.x1, c.y1, c.x2, c.y2, c.x3, c.y3),
+      cubicTo: (c) => path.cubicTo(c.x1, c.y1, c.x2, c.y2, c.x, c.y),
       close: (_) => path.close(),
     );
 
@@ -62,7 +62,7 @@ class SegmentPainter extends CustomPainter {
     return command.map(
       moveTo: (m) => Offset(m.x, m.y),
       lineTo: (l) => Offset(l.x, l.y),
-      cubicTo: (c) => Offset(c.x3, c.y3),
+      cubicTo: (c) => Offset(c.x, c.y),
       close: (_) => current,
     );
   }

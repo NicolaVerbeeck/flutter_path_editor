@@ -86,7 +86,7 @@ class _PathEditorState extends State<PathEditor> {
           (e) => e.map(
             moveTo: (m) => Offset(m.x, m.y),
             lineTo: (l) => Offset(l.x, l.y),
-            cubicTo: (c) => Offset(c.x3, c.y3),
+            cubicTo: (c) => Offset(c.x, c.y),
             close: (_) => null,
           ),
         )
@@ -118,7 +118,7 @@ class _PathEditorState extends State<PathEditor> {
             Positioned.fill(
               child: CustomPaint(
                 painter: PathPainter(
-                  operators: widget._controller.operators,
+                  path: widget._controller.path,
                   strokeColor: widget.strokeColor,
                   strokeWidth: widget.strokeWidth,
                   blendMode: widget.blendMode,

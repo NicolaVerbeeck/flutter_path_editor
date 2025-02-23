@@ -16,12 +16,12 @@ class FilledPath extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<String>(
+    return ValueListenableBuilder(
       valueListenable: controller,
-      builder: (context, path, _) {
+      builder: (context, pathHolder, _) {
         return CustomPaint(
           painter: _FilledPathPainter(
-            operators: controller.operators,
+            path: pathHolder.path,
             color: color,
             blendMode: blendMode,
           ),
@@ -32,51 +32,18 @@ class FilledPath extends StatelessWidget {
 }
 
 class _FilledPathPainter extends CustomPainter {
-  final List<PathOperator> operators;
+  final Path path;
   final Color color;
   final BlendMode blendMode;
 
   _FilledPathPainter({
-    required this.operators,
+    required this.path,
     required this.color,
     required this.blendMode,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (operators.isEmpty) return;
-
-    final path = Path();
-    Offset current = Offset.zero;
-
-    for (final op in operators) {
-      op.map(
-        moveTo: (m) {
-          current = Offset(m.x, m.y);
-          path.moveTo(current.dx, current.dy);
-        },
-        lineTo: (l) {
-          current = Offset(l.x, l.y);
-          path.lineTo(current.dx, current.dy);
-        },
-        cubicTo: (c) {
-          current = Offset(c.x3, c.y3);
-          path.cubicTo(
-            c.x1,
-            c.y1,
-            c.x2,
-            c.y2,
-            c.x3,
-            c.y3,
-          );
-        },
-        close: (_) {
-          path.close();
-        },
-      );
-    }
-
-    canvas.save();
     canvas.drawPath(
       path,
       Paint()
@@ -84,12 +51,11 @@ class _FilledPathPainter extends CustomPainter {
         ..style = PaintingStyle.fill
         ..blendMode = blendMode,
     );
-    canvas.restore();
   }
 
   @override
   bool shouldRepaint(_FilledPathPainter oldDelegate) {
-    return operators != oldDelegate.operators ||
+    return path != oldDelegate.path ||
         color != oldDelegate.color ||
         blendMode != oldDelegate.blendMode;
   }
