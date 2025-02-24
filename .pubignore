@@ -1,0 +1,13 @@
+.idea/
+.dart_tool/
+.github/
+unit.test.json
+*.iml
+example/.dart_tool/
+example/.idea
+example/build
+example/windows
+example/linux
+example/macos
+example/*.iml
+example/README

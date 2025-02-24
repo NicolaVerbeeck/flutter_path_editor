@@ -6,12 +6,29 @@ class SegmentPainter extends CustomPainter {
   final List<PathOperator> _operators;
   final PathSegmentIndex? _segmentIndex;
   final Offset? _indicatorPosition;
+  final Color _highlightColor;
+  final BlendMode _blendMode;
+  final double _segmentStrokeWidth;
+  final double _insertPointRadius;
+  final double _insertPointStrokeWidth;
+  final Color _insertPointColor;
 
   SegmentPainter(
     this._operators,
     this._segmentIndex,
-    this._indicatorPosition,
-  );
+    this._indicatorPosition, {
+    required Color highlightColor,
+    required BlendMode blendMode,
+    required double segmentStrokeWidth,
+    required double insertPointRadius,
+    required double insertPointStrokeWidth,
+    required Color insertPointColor,
+  })  : _highlightColor = highlightColor,
+        _blendMode = blendMode,
+        _segmentStrokeWidth = segmentStrokeWidth,
+        _insertPointRadius = insertPointRadius,
+        _insertPointStrokeWidth = insertPointStrokeWidth,
+        _insertPointColor = insertPointColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -35,19 +52,21 @@ class SegmentPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = Colors.purple
+        ..color = _highlightColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
+        ..strokeWidth = _segmentStrokeWidth
+        ..blendMode = _blendMode,
     );
 
     if (_indicatorPosition != null) {
       canvas.drawCircle(
         _indicatorPosition,
-        5,
+        _insertPointRadius,
         Paint()
-          ..color = Colors.red
-          ..strokeWidth = 3
-          ..style = PaintingStyle.stroke,
+          ..color = _insertPointColor
+          ..strokeWidth = _insertPointStrokeWidth
+          ..style = PaintingStyle.stroke
+          ..blendMode = _blendMode,
       );
     }
   }
@@ -56,7 +75,13 @@ class SegmentPainter extends CustomPainter {
   bool shouldRepaint(covariant SegmentPainter oldDelegate) =>
       !_operators.deepEquals(oldDelegate._operators) ||
       _segmentIndex != oldDelegate._segmentIndex ||
-      _indicatorPosition != oldDelegate._indicatorPosition;
+      _indicatorPosition != oldDelegate._indicatorPosition ||
+      _highlightColor != oldDelegate._highlightColor ||
+      _blendMode != oldDelegate._blendMode ||
+      _segmentStrokeWidth != oldDelegate._segmentStrokeWidth ||
+      _insertPointRadius != oldDelegate._insertPointRadius ||
+      _insertPointStrokeWidth != oldDelegate._insertPointStrokeWidth ||
+      _insertPointColor != oldDelegate._insertPointColor;
 
   Offset _getCommandEndpoint(PathOperator command, Offset current) {
     return command.map(
