@@ -81,7 +81,7 @@ class PathEditorController extends ValueNotifier<PathHolder> {
           y: point.dy,
         );
       case Close():
-      // Do nothing for close operator
+        throw ArgumentError('Cannot update position of close operator');
     }
 
     value = _buildPathHolder(operators);

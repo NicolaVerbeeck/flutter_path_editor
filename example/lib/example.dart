@@ -93,11 +93,13 @@ class _AppState extends State<App> {
         }
       },
       child: InteractiveViewer(
+        clipBehavior: Clip.none,
         transformationController: _transformationController,
         boundaryMargin: const EdgeInsets.all(double.infinity),
         minScale: 0.1,
         maxScale: 10.0,
         child: Stack(
+          clipBehavior: Clip.none,
           children: [
             // Background content
             Positioned.fill(
