@@ -83,6 +83,25 @@ extension PathOpListExt on List<PathOperator> {
       ),
     ).toList(growable: false);
   }
+
+  /// Translate the path points by [x] and [y]
+  List<PathOperator> translate(double x, double y) {
+    return map(
+      (e) => e.map(
+        moveTo: (moveTo) => MoveTo(x: moveTo.x + x, y: moveTo.y + y),
+        lineTo: (lineTo) => LineTo(x: lineTo.x + x, y: lineTo.y + y),
+        cubicTo: (cubicTo) => CubicTo(
+          x1: cubicTo.x1 + x,
+          y1: cubicTo.y1 + y,
+          x2: cubicTo.x2 + x,
+          y2: cubicTo.y2 + y,
+          x: cubicTo.x + x,
+          y: cubicTo.y + y,
+        ),
+        close: (close) => close,
+      ),
+    ).toList(growable: false);
+  }
 }
 
 /// Move to operator. Coordinates are absolute

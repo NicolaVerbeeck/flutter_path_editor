@@ -7,6 +7,7 @@ import 'package:path_editor/src/painting/points_painter.dart';
 import 'package:path_editor/src/painting/segment_painter.dart';
 import 'package:path_editor/src/util/path_math.dart';
 
+/// A widget that allows the user to edit a path
 class PathEditor extends StatefulWidget {
   static const _defaiultPointHitRadius = 10.0;
   static const _defaultControlPointHitRadius = 10.0;
@@ -72,6 +73,7 @@ class PathEditor extends StatefulWidget {
   /// The color of the insert point
   final Color insertPointColor;
 
+  /// Creates a new path editor
   const PathEditor({
     super.key,
     required this.controller,
@@ -150,62 +152,65 @@ class _PathEditorState extends State<PathEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: _cursor,
-      onHover: _handleHover,
-      child: GestureDetector(
-        onTapDown: _handleCanvasTap,
-        onPanStart: _handlePanStart,
-        onPanUpdate: _handlePanUpdate,
-        onPanEnd: _handlePanEnd,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: PathPainter(
-                  path: widget.controller.path,
-                  strokeColor: widget.strokeColor,
-                  strokeWidth: widget.pathStrokeWidth,
-                  blendMode: widget.blendMode,
+    return ClipRect(
+      clipBehavior: Clip.none,
+      child: MouseRegion(
+        cursor: _cursor,
+        onHover: _handleHover,
+        child: GestureDetector(
+          onTapDown: _handleCanvasTap,
+          onPanStart: _handlePanStart,
+          onPanUpdate: _handlePanUpdate,
+          onPanEnd: _handlePanEnd,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: PathPainter(
+                    path: widget.controller.path,
+                    strokeColor: widget.strokeColor,
+                    strokeWidth: widget.pathStrokeWidth,
+                    blendMode: widget.blendMode,
+                  ),
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: CustomPaint(
-                painter: SegmentPainter(
-                  widget.controller.operators,
-                  _highlightedSegment,
-                  _indicatorPosition,
-                  highlightColor: widget.segmentHighligtColor,
-                  blendMode: widget.blendMode,
-                  segmentStrokeWidth: widget.pathStrokeWidth,
-                  insertPointRadius: widget.insertPointRadius,
-                  insertPointStrokeWidth: widget.insertPointStrokeWidth,
-                  insertPointColor: widget.insertPointColor,
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: SegmentPainter(
+                    widget.controller.operators,
+                    _highlightedSegment,
+                    _indicatorPosition,
+                    highlightColor: widget.segmentHighligtColor,
+                    blendMode: widget.blendMode,
+                    segmentStrokeWidth: widget.pathStrokeWidth,
+                    insertPointRadius: widget.insertPointRadius,
+                    insertPointStrokeWidth: widget.insertPointStrokeWidth,
+                    insertPointColor: widget.insertPointColor,
+                  ),
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: CustomPaint(
-                painter: PointsPainter(
-                  points: _points,
-                  selectedIndex: _selectedIndex,
-                  controlPoints: _controlPoints,
-                  controlPointColor: widget.controlPointColor,
-                  selectedPointColor: widget.selectedPointColor,
-                  unselectedPointColor: widget.unselectedPointColor,
-                  blendMode: widget.blendMode,
-                  controlPointStrokeWidth: widget.controlPointStrokeWidth,
-                  controlPointRadius: widget.controlPointRadius,
-                  selectedPointRadius: widget.selectedPointRadius,
-                  unselectedPointRadius: widget.unselectedPointRadius,
-                  controlPointLineStrokeWidth:
-                      widget.controlPointLineStrokeWidth,
-                  controlPointLineColor: widget.controlPointLineColor,
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: PointsPainter(
+                    points: _points,
+                    selectedIndex: _selectedIndex,
+                    controlPoints: _controlPoints,
+                    controlPointColor: widget.controlPointColor,
+                    selectedPointColor: widget.selectedPointColor,
+                    unselectedPointColor: widget.unselectedPointColor,
+                    blendMode: widget.blendMode,
+                    controlPointStrokeWidth: widget.controlPointStrokeWidth,
+                    controlPointRadius: widget.controlPointRadius,
+                    selectedPointRadius: widget.selectedPointRadius,
+                    unselectedPointRadius: widget.unselectedPointRadius,
+                    controlPointLineStrokeWidth:
+                        widget.controlPointLineStrokeWidth,
+                    controlPointLineColor: widget.controlPointLineColor,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
