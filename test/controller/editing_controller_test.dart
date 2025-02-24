@@ -30,5 +30,14 @@ void main() {
           ControlPointIndex(0), PathPointIndex(1), const Offset(10, 11));
       expect(sut.value.pathString, 'M1.0 2.0C10.0 11.0 5.0 6.0 7.0 8.0');
     });
+
+    test('it throws if the control point is out of range', () {
+      sut.updatePath('M1 2C3 4 5 6 7 8');
+      expect(
+        () => sut.updateControlPointPosition(
+            ControlPointIndex(2), PathPointIndex(1), const Offset(10, 11)),
+        throwsArgumentError,
+      );
+    });
   });
 }

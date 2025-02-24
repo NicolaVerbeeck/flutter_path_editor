@@ -99,6 +99,9 @@ class PathEditorController extends ValueNotifier<PathHolder> {
 
     updatingPoint as CubicTo;
     final index = controlPointIndex.value;
+    if (index < 0 || index > 1) {
+      throw ArgumentError('controlPointIndex must be 0 or 1');
+    }
 
     _operators[selectedPoint.value] = CubicTo(
       x1: index == 0 ? point.dx : updatingPoint.x1,
