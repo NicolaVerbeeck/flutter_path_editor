@@ -138,14 +138,19 @@ class LineTo extends PathOperator {
 class CubicTo extends PathOperator {
   /// The x coordinate (absolute) of the first control point
   final double x1;
+
   /// The y coordinate (absolute) of the first control point
   final double y1;
+
   /// The x coordinate (absolute) of the second control point
   final double x2;
+
   /// The y coordinate (absolute) of the second control point
   final double y2;
+
   /// The x coordinate (absolute) of the end of the curve
   final double x;
+
   /// The y coordinate (absolute) of the end of the curve
   final double y;
 

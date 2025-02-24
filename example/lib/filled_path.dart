@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:path_editor/src/controller/path_editor_controller.dart';
-import 'package:path_editor/src/model/path_operators.dart';
+import 'package:path_editor/path_editor.dart';
 
 class FilledPath extends StatelessWidget {
   final PathEditorController controller;
