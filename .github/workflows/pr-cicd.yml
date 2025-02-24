@@ -1,0 +1,78 @@
+on:
+  pull_request:
+    types: [ opened, reopened, synchronize, ready_for_review ]
+  push:
+    branches:
+      - 'main'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run tests on'
+        required: true
+        default: 'main'
+
+name: PR CI/CD
+
+# cancel already running jobs for same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  analyze:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e # v2.10.4
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: stable
+      - name: Install dependencies
+        run: dart pub get
+      - run: dart analyze --fatal-infos
+  test:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@cb605e52c26070c328afc4562f0b4ada7618a84e # v2.10.4
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: flutter-actions/setup-flutter@v4
+        with:
+          channel: stable
+      - name: Install dependencies
+        run: dart pub get
+      - name: Install coverage
+        run: dart pub global activate coverage
+      - uses: stelynx/dart-full-coverage@fc91fc4cf52e65867c0ad0e54390d0fd4e22f7d8 # v1.1.1
+        with:
+          package: path_editor
+      - run: flutter test --coverage --reporter json --file-reporter unit.tests.json
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Test Report
+        if: always()
+        uses: dorny/test-reporter@31a54ee7ebcacc03a09ea97a7e5465a47b84aea5 # v1
+        with:
+          name: Unit Tests
+          path: unit.test.json
+          reporter: dart-json

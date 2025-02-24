@@ -12,44 +12,49 @@ class PathEditor extends StatefulWidget {
   static const _defaultControlPointHitRadius = 10.0;
   static const _defaultMinSegmentDistance = 20.0;
 
-  final PathEditorController _controller;
-  final double _pointHitRadius;
-  final double _controlPointHitRadius;
-  final double _minSegmentDistance;
+  final PathEditorController controller;
+  // Interaction limits
+  final double pointHitRadius;
+  final double controlPointHitRadius;
+  final double minSegmentDistance;
+
+  // Visual styling
   final double controlPointStrokeWidth;
+  final double controlPointLineStrokeWidth;
   final double controlPointRadius;
   final double selectedPointRadius;
   final double unselectedPointRadius;
-  // Add new visual customization properties
+  final double pathStrokeWidth;
+
   final Color strokeColor;
-  final double strokeWidth;
+
   final BlendMode blendMode;
   final Color indicatorColor;
   final Color controlPointColor;
+  final Color controlPointLineColor;
   final Color selectedPointColor;
   final Color unselectedPointColor;
 
   const PathEditor({
     super.key,
-    required PathEditorController controller,
-    double pointHitRadius = _defaiultPointHitRadius,
-    double controlPointHitRadius = _defaultControlPointHitRadius,
-    double minSegmentDistance = _defaultMinSegmentDistance,
+    required this.controller,
+    this.pointHitRadius = _defaiultPointHitRadius,
+    this.controlPointHitRadius = _defaultControlPointHitRadius,
+    this.minSegmentDistance = _defaultMinSegmentDistance,
     this.strokeColor = Colors.black,
-    this.strokeWidth = 2.0,
+    this.pathStrokeWidth = 2.0,
     this.blendMode = BlendMode.srcOver,
     this.indicatorColor = Colors.blue,
     this.controlPointColor = Colors.green,
+    this.controlPointLineColor = Colors.green,
     this.selectedPointColor = Colors.red,
     this.unselectedPointColor = Colors.black,
     this.controlPointStrokeWidth = 2.0,
     this.controlPointRadius = 5.0,
     this.selectedPointRadius = 8.0,
     this.unselectedPointRadius = 5.0,
-  })  : _controller = controller,
-        _pointHitRadius = pointHitRadius,
-        _controlPointHitRadius = controlPointHitRadius,
-        _minSegmentDistance = minSegmentDistance;
+    this.controlPointLineStrokeWidth = 2.5,
+  });
 
   @override
   State<PathEditor> createState() => _PathEditorState();
@@ -81,7 +86,7 @@ class _PathEditorState extends State<PathEditor> {
   }
 
   void _rebuildPoints() {
-    _points = widget._controller.operators
+    _points = widget.controller.operators
         .map(
           (e) => e.map(
             moveTo: (m) => Offset(m.x, m.y),
@@ -118,9 +123,9 @@ class _PathEditorState extends State<PathEditor> {
             Positioned.fill(
               child: CustomPaint(
                 painter: PathPainter(
-                  path: widget._controller.path,
+                  path: widget.controller.path,
                   strokeColor: widget.strokeColor,
-                  strokeWidth: widget.strokeWidth,
+                  strokeWidth: widget.pathStrokeWidth,
                   blendMode: widget.blendMode,
                 ),
               ),
@@ -128,7 +133,7 @@ class _PathEditorState extends State<PathEditor> {
             Positioned.fill(
               child: CustomPaint(
                 painter: SegmentPainter(
-                  widget._controller.operators,
+                  widget.controller.operators,
                   _highlightedSegment,
                   _indicatorPosition,
                   // indicatorColor: widget.indicatorColor,
@@ -150,6 +155,9 @@ class _PathEditorState extends State<PathEditor> {
                   controlPointRadius: widget.controlPointRadius,
                   selectedPointRadius: widget.selectedPointRadius,
                   unselectedPointRadius: widget.unselectedPointRadius,
+                  controlPointLineStrokeWidth:
+                      widget.controlPointLineStrokeWidth,
+                  controlPointLineColor: widget.controlPointLineColor,
                 ),
               ),
             ),
@@ -166,7 +174,7 @@ class _PathEditorState extends State<PathEditor> {
     final controlPointIndex = findNearestControlPointIndex(
       _controlPoints,
       localPosition,
-      widget._controlPointHitRadius,
+      widget.controlPointHitRadius,
     );
 
     _selectedControlPointIndex = controlPointIndex;
@@ -181,7 +189,7 @@ class _PathEditorState extends State<PathEditor> {
 
     // Check if we are hovering over a point
     final nearestPointIndex =
-        findNearestIndex(_points, localPosition, widget._pointHitRadius);
+        findNearestIndex(_points, localPosition, widget.pointHitRadius);
     if (nearestPointIndex != null) {
       final newCursor = _selectedIndex == nearestPointIndex
           ? SystemMouseCursors.grab
@@ -197,14 +205,14 @@ class _PathEditorState extends State<PathEditor> {
 
     // Find a segment we are hovering over
     final index = findClosestSegment(
-      widget._controller.operators,
+      widget.controller.operators,
       details.localPosition,
-      widget._minSegmentDistance,
+      widget.minSegmentDistance,
     );
     final indicatorPosition = index == null
         ? null
         : calculateIndicatorPosition(
-            widget._controller.operators,
+            widget.controller.operators,
             details.localPosition,
             index,
           );
@@ -227,7 +235,7 @@ class _PathEditorState extends State<PathEditor> {
     if (_selectedControlPointIndex != null) {
       assert(_selectedIndex != null,
           'Selected control point should have a selected point index');
-      widget._controller.updateControlPointPosition(
+      widget.controller.updateControlPointPosition(
         _selectedControlPointIndex!,
         _selectedIndex!,
         details.localPosition,
@@ -236,7 +244,7 @@ class _PathEditorState extends State<PathEditor> {
         _rebuildPoints();
       });
     } else if (_selectedIndex != null) {
-      widget._controller
+      widget.controller
           .updatePointPosition(_selectedIndex!, details.localPosition);
       setState(() {
         _rebuildPoints();
@@ -255,7 +263,7 @@ class _PathEditorState extends State<PathEditor> {
   void _rebuildControlPoints() {
     _controlPoints = _selectedIndex == null
         ? []
-        : widget._controller.controlPointsAt(_selectedIndex!);
+        : widget.controller.controlPointsAt(_selectedIndex!);
 
     // Check if the selected control point is still valid
     if (_selectedControlPointIndex != null &&
@@ -270,7 +278,7 @@ class _PathEditorState extends State<PathEditor> {
     final controlPointIndex = findNearestControlPointIndex(
       _controlPoints,
       localPosition,
-      widget._controlPointHitRadius,
+      widget.controlPointHitRadius,
     );
     if (controlPointIndex != null) {
       setState(() {
@@ -283,7 +291,7 @@ class _PathEditorState extends State<PathEditor> {
     final point = findNearestIndex(
       _points,
       localPosition,
-      widget._pointHitRadius,
+      widget.pointHitRadius,
     );
 
     // If we are not hitting a point, perhaps we are inserting a new point
@@ -293,7 +301,7 @@ class _PathEditorState extends State<PathEditor> {
       assert(segment != null,
           'Having an indicator should also have a segment that indicator applies to');
 
-      widget._controller.insertPoint(segment!, localPosition);
+      widget.controller.insertPoint(segment!, localPosition);
 
       // If the parent widget does not rebuild the path, we need to rebuild
       // the points manually
