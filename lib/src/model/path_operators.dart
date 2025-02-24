@@ -1,4 +1,4 @@
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 import 'package:path_parsing/path_parsing.dart';
 
 /// Path operator class heirarchy. The coordinates expressed in the subclasses

@@ -1,39 +1,45 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# Path Editor
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+[![Version](https://img.shields.io/pub/v/path_editor.svg)](https://pub.dev/packages/path_editor) [![codecov](https://codecov.io/gh/NicolaVerbeeck/flutter_path_editor/graph/badge.svg?token=20CAT9JC3Y)](https://codecov.io/gh/NicolaVerbeeck/flutter_path_editor)[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/NicolaVerbeeck/flutter_path_editor/badge)](https://securityscorecards.dev/viewer/?uri=github.com/NicolaVerbeeck/flutter_path_editor)
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+A Flutter widget for visually editing SVG paths.
 
 ## Features
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+- Visual editing of SVG paths
+- Supports move, line, and cubic bezier curve commands
+- Interactive control points for cubic bezier curves
+- Customizable appearance
 
-## Getting started
+## Example Usage
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
 
 ```dart
-const like = 'sample';
+Stack(
+  children: [
+    // Background content
+    Positioned.fill(
+      child: FilledPath(
+        controller: controller,
+        color: Colors.blue.withAlpha(127),
+        blendMode: BlendMode.srcOver,
+      ),
+    ),
+    // Path editor on top
+    Positioned.fill(
+      child: PathEditor(
+        controller: controller,
+      ),
+    ),
+  ],
+)
 ```
 
 ## Additional information
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+Paths are transformed into absolute mode and all operations are remapped to MoveTo, LineTo and CubicTo. This ensures the paths are compatible with all outputs such as SVG and PDF.
+
+For more information, visit the [GitHub repository](https://github.com/NicolaVerbeeck/flutter_path_editor).
+
+If you encounter any issues or have feature requests, please file them on the [issue tracker](https://github.com/NicolaVerbeeck/flutter_path_editor/issues).

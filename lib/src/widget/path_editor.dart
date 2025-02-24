@@ -12,28 +12,65 @@ class PathEditor extends StatefulWidget {
   static const _defaultControlPointHitRadius = 10.0;
   static const _defaultMinSegmentDistance = 20.0;
 
+  /// The controller for the path
   final PathEditorController controller;
-  // Interaction limits
+
+  /// The hit radius to use when checking if the 'cursor' is overlapping a point
   final double pointHitRadius;
+
+  /// The hit radius to use when checking if the 'cursor' is overlapping a control point
   final double controlPointHitRadius;
+
+  /// The minimum distance to consider a segment as 'hovered'
   final double minSegmentDistance;
 
-  // Visual styling
+  /// The stroke width of the control points
   final double controlPointStrokeWidth;
+
+  /// The stroke width of the control point lines
   final double controlPointLineStrokeWidth;
+
+  /// The radius of the control points
   final double controlPointRadius;
+
+  /// The radius of the selected point
   final double selectedPointRadius;
+
+  /// The radius of the unselected point
   final double unselectedPointRadius;
+
+  /// The radius of the insert point
+  final double insertPointRadius;
+
+  /// The stroke width of the insert point
+  final double insertPointStrokeWidth;
+
+  /// The stroke width of the path
   final double pathStrokeWidth;
 
+  /// The color of the path
   final Color strokeColor;
 
+  /// The blend mode to use when rendering the elements
   final BlendMode blendMode;
-  final Color indicatorColor;
+
+  /// The color of the highlighted segment
+  final Color segmentHighligtColor;
+
+  /// The color of the control points
   final Color controlPointColor;
+
+  /// The color of the control point lines
   final Color controlPointLineColor;
+
+  /// The color of the selected point
   final Color selectedPointColor;
+
+  /// The color of the unselected point
   final Color unselectedPointColor;
+
+  /// The color of the insert point
+  final Color insertPointColor;
 
   const PathEditor({
     super.key,
@@ -44,16 +81,19 @@ class PathEditor extends StatefulWidget {
     this.strokeColor = Colors.black,
     this.pathStrokeWidth = 2.0,
     this.blendMode = BlendMode.srcOver,
-    this.indicatorColor = Colors.blue,
+    this.segmentHighligtColor = Colors.blue,
     this.controlPointColor = Colors.green,
     this.controlPointLineColor = Colors.green,
     this.selectedPointColor = Colors.red,
     this.unselectedPointColor = Colors.black,
+    this.insertPointColor = Colors.red,
+    this.insertPointRadius = 5.0,
     this.controlPointStrokeWidth = 2.0,
     this.controlPointRadius = 5.0,
     this.selectedPointRadius = 8.0,
     this.unselectedPointRadius = 5.0,
     this.controlPointLineStrokeWidth = 2.5,
+    this.insertPointStrokeWidth = 3.0,
   });
 
   @override
@@ -136,8 +176,12 @@ class _PathEditorState extends State<PathEditor> {
                   widget.controller.operators,
                   _highlightedSegment,
                   _indicatorPosition,
-                  // indicatorColor: widget.indicatorColor,
-                  // blendMode: widget.blendMode,
+                  highlightColor: widget.segmentHighligtColor,
+                  blendMode: widget.blendMode,
+                  segmentStrokeWidth: widget.pathStrokeWidth,
+                  insertPointRadius: widget.insertPointRadius,
+                  insertPointStrokeWidth: widget.insertPointStrokeWidth,
+                  insertPointColor: widget.insertPointColor,
                 ),
               ),
             ),
