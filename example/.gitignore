@@ -50,6 +50,7 @@ linux/
 web/
 android/
 ios/
+test/
 
 .metadata
 analysis_options.yaml
