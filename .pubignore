@@ -11,3 +11,7 @@ example/linux
 example/macos
 example/*.iml
 example/README
+build/
+analysis_options.yaml
+coverage/
+test/
