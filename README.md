@@ -1,7 +1,10 @@
 # Path Editor
 
-[![Version](https://img.shields.io/pub/v/path_editor.svg)](https://pub.dev/packages/path_editor) [![codecov](https://codecov.io/gh/NicolaVerbeeck/flutter_path_editor/graph/badge.svg?token=20CAT9JC3Y)](https://codecov.io/gh/NicolaVerbeeck/flutter_path_editor)[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/NicolaVerbeeck/flutter_path_editor/badge)](https://securityscorecards.dev/viewer/?uri=github.com/NicolaVerbeeck/flutter_path_editor)
-
+[![Version](https://img.shields.io/pub/v/path_editor.svg)](https://pub.dev/packages/path_editor)
+[![test](https://github.com/NicolaVerbeeck/flutter_path_editor/actions/workflows/pr-cicd.yml/badge.svg)](https://github.com/NicolaVerbeeck/flutter_path_editor/actions/workflows/pr-cicd.yml/badge.svg)
+[![codecov](https://codecov.io/gh/NicolaVerbeeck/flutter_path_editor/graph/badge.svg?token=20CAT9JC3Y)](https://codecov.io/gh/NicolaVerbeeck/flutter_path_editor)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/NicolaVerbeeck/flutter_path_editor/badge)](https://securityscorecards.dev/viewer/?uri=github.com/NicolaVerbeeck/flutter_path_editor)
+[![live_demo](https://img.shields.io/badge/Live%20Demo-Available-7D64F2)](https://nicolaverbeeck.github.io/flutter_path_editor/)
 
 A Flutter widget for visually editing SVG paths.
 
