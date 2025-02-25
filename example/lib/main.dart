@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:path_editor/path_editor.dart';
-import 'package:flutter/services.dart';
 import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_editor/path_editor.dart';
 
 bool get isMacOS {
   if (kIsWeb) {
@@ -19,16 +20,13 @@ void main() {
   operators = operators.scale(30, 30);
   final scaledPath = operators.toSvg();
 
+  final initialSize =
+      PathEditorController.calculateBoundingBoxOfPath(operators, 2.0);
+
   runApp(
     MaterialApp(
       home: Scaffold(
-        body: Center(
-          child: SizedBox(
-            width: 400,
-            height: 400,
-            child: App(initialPath: scaledPath),
-          ),
-        ),
+        body: App(initialPath: scaledPath, initialSize: initialSize),
       ),
     ),
   );
@@ -36,8 +34,13 @@ void main() {
 
 class App extends StatefulWidget {
   final String initialPath;
+  final Rect initialSize;
 
-  const App({super.key, required this.initialPath});
+  const App({
+    super.key,
+    required this.initialPath,
+    required this.initialSize,
+  });
 
   @override
   State<App> createState() => _AppState();
@@ -45,6 +48,7 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   late final PathEditorController controller;
+
   bool showBounds = true;
 
   @override
@@ -104,41 +108,50 @@ class _AppState extends State<App> {
             },
             child: Focus(
               autofocus: true,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Background content
-                  Positioned.fill(
-                    child: FilledPath(
-                      controller: controller,
-                      color: Colors.blue.withAlpha(127),
-                      blendMode: BlendMode.srcOver,
-                    ),
-                  ),
-
-                  // Bounds visualization
-                  if (showBounds)
+              child: LayoutBuilder(builder: (contex, constraints) {
+                // Calculate offset to the center of the screen
+                final renderOffset = Offset(
+                  constraints.maxWidth / 2 - widget.initialSize.width / 2,
+                  constraints.maxHeight / 2 - widget.initialSize.height / 2,
+                );
+                return Stack(
+                  children: [
+                    // Background content
                     Positioned.fill(
-                      child: ValueListenableBuilder(
-                        valueListenable: controller,
-                        builder: (context, _, __) {
-                          return CustomPaint(
-                            painter: _BoundsPainter(
-                              bounds: controller.calculateBoundingBox(2.0),
-                            ),
-                          );
-                        },
+                      child: FilledPath(
+                        controller: controller,
+                        color: Colors.blue.withAlpha(127),
+                        blendMode: BlendMode.srcOver,
+                        renderOffset: renderOffset,
                       ),
                     ),
 
-                  // Path editor on top
-                  Positioned.fill(
-                    child: PathEditor(
-                      controller: controller,
+                    // Bounds visualization
+                    if (showBounds)
+                      Positioned.fill(
+                        child: ValueListenableBuilder(
+                          valueListenable: controller,
+                          builder: (context, _, __) {
+                            return CustomPaint(
+                              painter: _BoundsPainter(
+                                bounds: controller.calculateBoundingBox(2.0),
+                                offset: renderOffset,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+
+                    // Path editor on top
+                    Positioned.fill(
+                      child: PathEditor(
+                        controller: controller,
+                        renderOffset: renderOffset,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                );
+              }),
             ),
           ),
         ),
@@ -149,11 +162,18 @@ class _AppState extends State<App> {
 
 class _BoundsPainter extends CustomPainter {
   final Rect bounds;
+  final Offset offset;
 
-  _BoundsPainter({required this.bounds});
+  _BoundsPainter({
+    required this.bounds,
+    required this.offset,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.translate(offset.dx, offset.dy);
+
     final paint = Paint()
       ..color = Colors.red
       ..style = PaintingStyle.stroke
@@ -180,11 +200,13 @@ class _BoundsPainter extends CustomPainter {
       bounds.bottomLeft,
       paint,
     );
+
+    canvas.restore();
   }
 
   @override
   bool shouldRepaint(_BoundsPainter oldDelegate) {
-    return bounds != oldDelegate.bounds;
+    return bounds != oldDelegate.bounds || offset != oldDelegate.offset;
   }
 }
 
@@ -192,12 +214,14 @@ class FilledPath extends StatelessWidget {
   final PathEditorController controller;
   final Color color;
   final BlendMode blendMode;
+  final Offset renderOffset;
 
   const FilledPath({
     super.key,
     required this.controller,
     this.color = Colors.black,
     this.blendMode = BlendMode.srcOver,
+    this.renderOffset = Offset.zero,
   });
 
   @override
@@ -210,6 +234,7 @@ class FilledPath extends StatelessWidget {
             path: pathHolder.path,
             color: color,
             blendMode: blendMode,
+            offset: renderOffset,
           ),
         );
       },
@@ -221,15 +246,20 @@ class _FilledPathPainter extends CustomPainter {
   final Path path;
   final Color color;
   final BlendMode blendMode;
+  final Offset offset;
 
   _FilledPathPainter({
     required this.path,
     required this.color,
     required this.blendMode,
+    required this.offset,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.translate(offset.dx, offset.dy);
+
     canvas.drawPath(
       path,
       Paint()
@@ -237,12 +267,15 @@ class _FilledPathPainter extends CustomPainter {
         ..style = PaintingStyle.fill
         ..blendMode = blendMode,
     );
+
+    canvas.restore();
   }
 
   @override
   bool shouldRepaint(_FilledPathPainter oldDelegate) {
     return path != oldDelegate.path ||
         color != oldDelegate.color ||
-        blendMode != oldDelegate.blendMode;
+        blendMode != oldDelegate.blendMode ||
+        offset != oldDelegate.offset;
   }
 }

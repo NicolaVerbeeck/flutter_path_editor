@@ -16,6 +16,11 @@ class PathEditor extends StatefulWidget {
   /// The controller for the path
   final PathEditorController controller;
 
+  /// The offset to use when rendering the path.
+  /// This is useful when the widget is larger than the path to allow for
+  /// control points to be rendered outside of the path box
+  final Offset renderOffset;
+
   /// The hit radius to use when checking if the 'cursor' is overlapping a point
   final double pointHitRadius;
 
@@ -77,6 +82,7 @@ class PathEditor extends StatefulWidget {
   const PathEditor({
     super.key,
     required this.controller,
+    this.renderOffset = Offset.zero,
     this.pointHitRadius = _defaiultPointHitRadius,
     this.controlPointHitRadius = _defaultControlPointHitRadius,
     this.minSegmentDistance = _defaultMinSegmentDistance,
@@ -167,19 +173,21 @@ class _PathEditorState extends State<PathEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRect(
-      clipBehavior: Clip.none,
-      child: MouseRegion(
-        cursor: _cursor,
-        onHover: _handleHover,
-        child: GestureDetector(
-          onTapDown: _handleCanvasTap,
-          onPanStart: _handlePanStart,
-          onPanUpdate: _handlePanUpdate,
-          onPanEnd: _handlePanEnd,
+    return MouseRegion(
+      cursor: _cursor,
+      onHover: _handleHover,
+      child: GestureDetector(
+        onTapDown: _handleCanvasTap,
+        onPanStart: _handlePanStart,
+        onPanUpdate: _handlePanUpdate,
+        onPanEnd: _handlePanEnd,
+        child: Container(
+          color: Colors.transparent,
           child: Stack(
             children: [
               Positioned.fill(
+                left: widget.renderOffset.dx,
+                top: widget.renderOffset.dy,
                 child: CustomPaint(
                   painter: PathPainter(
                     path: widget.controller.path,
@@ -190,6 +198,8 @@ class _PathEditorState extends State<PathEditor> {
                 ),
               ),
               Positioned.fill(
+                left: widget.renderOffset.dx,
+                top: widget.renderOffset.dy,
                 child: CustomPaint(
                   painter: SegmentPainter(
                     widget.controller.operators,
@@ -205,6 +215,8 @@ class _PathEditorState extends State<PathEditor> {
                 ),
               ),
               Positioned.fill(
+                left: widget.renderOffset.dx,
+                top: widget.renderOffset.dy,
                 child: CustomPaint(
                   painter: PointsPainter(
                     points: _points,
@@ -232,7 +244,7 @@ class _PathEditorState extends State<PathEditor> {
   }
 
   void _handleHover(PointerHoverEvent details) {
-    final localPosition = details.localPosition;
+    final localPosition = details.localPosition - widget.renderOffset;
 
     // Check if we are hovering over a control point
     final controlPointIndex = findNearestControlPointIndex(
@@ -270,14 +282,14 @@ class _PathEditorState extends State<PathEditor> {
     // Find a segment we are hovering over
     final index = findClosestSegment(
       widget.controller.operators,
-      details.localPosition,
+      localPosition,
       widget.minSegmentDistance,
     );
     final indicatorPosition = index == null
         ? null
         : calculateIndicatorPosition(
             widget.controller.operators,
-            details.localPosition,
+            localPosition,
             index,
           );
     setState(() {
@@ -287,8 +299,8 @@ class _PathEditorState extends State<PathEditor> {
     });
   }
 
-  void _handlePanStart(DragStartDetails details) {
-    widget.controller.beginPan();
+  void _handlePanStart(DragStartDetails _) {
+    widget.controller.beginUpdate();
     if (_selectedIndex != null) {
       setState(() {
         _cursor = SystemMouseCursors.grabbing;
@@ -297,22 +309,25 @@ class _PathEditorState extends State<PathEditor> {
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
+    final localPosition = details.localPosition - widget.renderOffset;
     if (_selectedControlPointIndex != null) {
       assert(_selectedIndex != null,
           'Selected control point should have a selected point index');
       widget.controller.updateControlPointPosition(
         _selectedControlPointIndex!,
         _selectedIndex!,
-        details.localPosition,
+        localPosition,
       );
     } else if (_selectedIndex != null) {
-      widget.controller
-          .updatePointPosition(_selectedIndex!, details.localPosition);
+      widget.controller.updatePointPosition(
+        _selectedIndex!,
+        localPosition,
+      );
     }
   }
 
-  void _handlePanEnd(DragEndDetails details) {
-    widget.controller.endPan();
+  void _handlePanEnd(DragEndDetails _) {
+    widget.controller.endUpdate();
     if (_selectedIndex != null || _selectedControlPointIndex != null) {
       setState(() {
         _cursor = SystemMouseCursors.grab;
@@ -333,7 +348,7 @@ class _PathEditorState extends State<PathEditor> {
   }
 
   void _handleCanvasTap(TapDownDetails details) {
-    final localPosition = details.localPosition;
+    final localPosition = details.localPosition - widget.renderOffset;
 
     final controlPointIndex = findNearestControlPointIndex(
       _controlPoints,

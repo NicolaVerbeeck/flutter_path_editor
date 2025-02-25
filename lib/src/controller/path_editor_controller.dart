@@ -30,7 +30,7 @@ class PathEditorController extends ValueNotifier<PathHolder> {
   final List<PathCommand> _redoStack = [];
 
   bool _isPanning = false;
-  List<PathOperator>? _panStartOperators;
+  List<PathOperator>? _savedUpdateState;
 
   bool get canUndo => _undoStack.isNotEmpty;
   bool get canRedo => _redoStack.isNotEmpty;
@@ -183,6 +183,19 @@ class PathEditorController extends ValueNotifier<PathHolder> {
     double strokeWidth, {
     BoundsCheckAccuracy accurracy = BoundsCheckAccuracy.fine,
   }) =>
+      calculateBoundingBoxOfPath(
+        _operators,
+        strokeWidth,
+        accurracy: accurracy,
+      );
+
+  /// Calculate the bounding box of the path (defined by [operators]) if the path were stroked with the
+  /// given [strokeWidth]. Use [accurracy] to control how accurate the bounds check
+  static Rect calculateBoundingBoxOfPath(
+    List<PathOperator> operators,
+    double strokeWidth, {
+    BoundsCheckAccuracy accurracy = BoundsCheckAccuracy.fine,
+  }) =>
       calculatePathBounds(
         operators,
         strokeWidth: strokeWidth,
@@ -215,32 +228,31 @@ class PathEditorController extends ValueNotifier<PathHolder> {
     );
   }
 
-  /// Notify the controller that we are entering a pan gesture
-  /// This is used to prevent undo/redo commands from being added for every
-  /// update during a pan gesture. We do update the path during a pan gesture,
-  /// but we only add a single undo command for the entire pan operation
-  void beginPan() {
+  /// Notify the controller that we are entering an update phase.
+  /// Inside an update phase, undo/redo is not recorded for every change
+  /// but only for the entire update operation is finished with [endUpdate]
+  void beginUpdate() {
     if (!_isPanning) {
       _isPanning = true;
-      _panStartOperators = List.from(_operators);
+      _savedUpdateState = List.from(_operators);
     }
   }
 
-  /// Notify the controller that we are ending a pan gesture
-  /// This is used to prevent undo/redo commands from being added for every
-  /// update during a pan gesture. On pan end we add the undo command
-  /// for the entire pan operation
-  void endPan() {
-    if (_isPanning && _panStartOperators != null) {
+  /// Notify the controller that we are done with the update phase.
+  /// This will create a single undo entry for the entire update operation
+  void endUpdate() {
+    if (_isPanning && _savedUpdateState != null) {
       _isPanning = false;
-      if (!_panStartOperators!.deepEquals(_operators)) {
+      if (!_savedUpdateState!.deepEquals(_operators)) {
         // Only create undo command if there were actual changes
-        _executeCommand(UpdatePathCommand(
-          _panStartOperators!,
-          List.from(_operators),
-        ));
+        _executeCommand(
+          UpdatePathCommand(
+            _savedUpdateState!,
+            List.from(_operators),
+          ),
+        );
       }
-      _panStartOperators = null;
+      _savedUpdateState = null;
     }
   }
 }
