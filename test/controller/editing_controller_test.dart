@@ -137,10 +137,10 @@ void main() {
 
     group('pan gesture tests', () {
       test('creates single undo entry for pan sequence', () {
-        sut.beginPan();
+        sut.beginUpdate();
         sut.updatePointPosition(PathPointIndex(0), const Offset(3, 4));
         sut.updatePointPosition(PathPointIndex(0), const Offset(5, 6));
-        sut.endPan();
+        sut.endUpdate();
 
         expect(sut.value.pathString, 'M5.0 6.0');
         sut.undo();
@@ -148,17 +148,17 @@ void main() {
       });
 
       test('does not create undo entry if no changes during pan', () {
-        sut.beginPan();
-        sut.endPan();
+        sut.beginUpdate();
+        sut.endUpdate();
         expect(sut.canUndo, isFalse);
       });
 
       test('ignores nested pan calls', () {
-        sut.beginPan();
-        sut.beginPan(); // Should be ignored
+        sut.beginUpdate();
+        sut.beginUpdate(); // Should be ignored
         sut.updatePointPosition(PathPointIndex(0), const Offset(3, 4));
-        sut.endPan();
-        sut.endPan(); // Should be ignored
+        sut.endUpdate();
+        sut.endUpdate(); // Should be ignored
 
         expect(sut.value.pathString, 'M3.0 4.0');
         sut.undo();
