@@ -1,6 +1,6 @@
 name: path_editor
 description: "A Flutter widget for visually editing and manipulating SVG paths."
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/NicolaVerbeeck/flutter_path_editor
 issue_tracker: https://github.com/NicolaVerbeeck/flutter_path_editor/issues
 topics: [ svg, path, editor ]

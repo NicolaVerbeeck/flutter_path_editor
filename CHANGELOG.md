@@ -1,3 +1,8 @@
+## 0.0.4
+
+* Add bounds calculation
+* Add undo redo system
+
 ## 0.0.2
 
 * Updates to pubspec
