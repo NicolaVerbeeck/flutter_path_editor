@@ -28,7 +28,7 @@ jobs:
         working-directory: ./example
       - run: flutter create --platforms=web .
         working-directory: ./example
-      - run: flutter build web --base-href flutter_path_editor/
+      - run: flutter build web --base-href /flutter_path_editor/
         working-directory: ./example
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3.0.1
