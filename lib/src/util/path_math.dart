@@ -256,3 +256,69 @@ Offset _getCommandEndpoint(PathOperator command, Offset current) {
     close: (_) => current,
   );
 }
+
+Rect calculatePathBounds(
+  List<PathOperator> operators, {
+  required double strokeWidth,
+  double quadraticSamplingStep = 0.05,
+}) {
+  if (operators.isEmpty) return Rect.zero;
+
+  double minX = double.infinity;
+  double minY = double.infinity;
+  double maxX = -double.infinity;
+  double maxY = -double.infinity;
+
+  void expandBounds(Offset point) {
+    minX = math.min(minX, point.dx);
+    minY = math.min(minY, point.dy);
+    maxX = math.max(maxX, point.dx);
+    maxY = math.max(maxY, point.dy);
+  }
+
+  var current = Offset.zero;
+  for (final op in operators) {
+    op.map(
+      moveTo: (m) {
+        current = Offset(m.x, m.y);
+        expandBounds(current);
+      },
+      lineTo: (l) {
+        final end = Offset(l.x, l.y);
+        expandBounds(current);
+        expandBounds(end);
+        current = end;
+      },
+      cubicTo: (c) {
+        final p0 = current;
+        final p1 = Offset(c.x1, c.y1);
+        final p2 = Offset(c.x2, c.y2);
+        final p3 = Offset(c.x, c.y);
+
+        // Dense sampling for more accurate bounds
+        for (double t = 0; t <= 1.0; t += quadraticSamplingStep) {
+          // 20 samples per curve
+          final point = _cubicBezier(p0, p1, p2, p3, t);
+          expandBounds(point);
+        }
+        // Ensure end point is included
+        expandBounds(p3);
+
+        current = p3;
+      },
+      close: (_) {},
+    );
+  }
+
+  if (minX == double.infinity) return Rect.zero;
+
+  // Add some padding to compensate for sampling
+  final halfStroke = strokeWidth / 2;
+  final pad = halfStroke + 0.1; // Small extra padding for safety
+  return Rect.fromLTRB(
+    minX - pad,
+    minY - pad,
+    maxX + pad,
+    maxY + pad,
+  );
+}

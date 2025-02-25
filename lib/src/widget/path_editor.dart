@@ -117,6 +117,8 @@ class _PathEditorState extends State<PathEditor> {
   void initState() {
     super.initState();
 
+    widget.controller.addListener(_rebuildPoints);
+
     _rebuildPoints();
   }
 
@@ -124,30 +126,43 @@ class _PathEditorState extends State<PathEditor> {
   void didUpdateWidget(covariant PathEditor oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_rebuildPoints);
+      widget.controller.addListener(_rebuildPoints);
+    }
+
     _rebuildPoints();
   }
 
+  @override
+  void dispose() {
+    widget.controller.removeListener(_rebuildPoints);
+    super.dispose();
+  }
+
   void _rebuildPoints() {
-    _points = widget.controller.operators
-        .map(
-          (e) => e.map(
-            moveTo: (m) => Offset(m.x, m.y),
-            lineTo: (l) => Offset(l.x, l.y),
-            cubicTo: (c) => Offset(c.x, c.y),
-            close: (_) => null,
-          ),
-        )
-        .nonNulls
-        .toList();
-    _highlightedSegment = null;
+    setState(() {
+      _points = widget.controller.operators
+          .map(
+            (e) => e.map(
+              moveTo: (m) => Offset(m.x, m.y),
+              lineTo: (l) => Offset(l.x, l.y),
+              cubicTo: (c) => Offset(c.x, c.y),
+              close: (_) => null,
+            ),
+          )
+          .nonNulls
+          .toList();
+      _highlightedSegment = null;
 
-    // Check if the selected index is still with the valid range
-    if (_selectedIndex != null && _selectedIndex!.value >= _points.length) {
-      _selectedIndex = null;
-      _selectedControlPointIndex = null;
-    }
+      // Check if the selected index is still with the valid range
+      if (_selectedIndex != null && _selectedIndex!.value >= _points.length) {
+        _selectedIndex = null;
+        _selectedControlPointIndex = null;
+      }
 
-    _rebuildControlPoints();
+      _rebuildControlPoints();
+    });
   }
 
   @override
@@ -273,6 +288,7 @@ class _PathEditorState extends State<PathEditor> {
   }
 
   void _handlePanStart(DragStartDetails details) {
+    widget.controller.beginPan();
     if (_selectedIndex != null) {
       setState(() {
         _cursor = SystemMouseCursors.grabbing;
@@ -289,19 +305,14 @@ class _PathEditorState extends State<PathEditor> {
         _selectedIndex!,
         details.localPosition,
       );
-      setState(() {
-        _rebuildPoints();
-      });
     } else if (_selectedIndex != null) {
       widget.controller
           .updatePointPosition(_selectedIndex!, details.localPosition);
-      setState(() {
-        _rebuildPoints();
-      });
     }
   }
 
   void _handlePanEnd(DragEndDetails details) {
+    widget.controller.endPan();
     if (_selectedIndex != null || _selectedControlPointIndex != null) {
       setState(() {
         _cursor = SystemMouseCursors.grab;
@@ -357,7 +368,6 @@ class _PathEditorState extends State<PathEditor> {
       setState(() {
         _highlightedSegment = null;
         _indicatorPosition = null;
-        _rebuildPoints();
         _selectedIndex = null;
       });
       return;

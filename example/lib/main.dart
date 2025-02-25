@@ -1,5 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:path_editor/path_editor.dart';
+import 'package:flutter/services.dart';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+
+bool get isMacOS {
+  if (kIsWeb) {
+    final platform = defaultTargetPlatform;
+    return platform == TargetPlatform.macOS;
+  }
+  return Platform.isMacOS;
+}
 
 void main() {
   const path =
@@ -34,39 +45,146 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   late final PathEditorController controller;
+  bool showBounds = true;
+
   @override
   void initState() {
     super.initState();
-
     controller = PathEditorController(widget.initialPath);
   }
 
   @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
+    return Column(
       children: [
-        // Background content
-        Positioned.fill(
-          child: FilledPath(
-            controller: controller,
-            color: Colors.blue.withAlpha(127),
-            blendMode: BlendMode.srcOver,
-          ),
+        // Add toolbar with bounds toggle and undo/redo
+        Row(
+          children: [
+            Expanded(
+              child: CheckboxListTile(
+                title: const Text('Show Bounds'),
+                value: showBounds,
+                onChanged: (value) =>
+                    setState(() => showBounds = value ?? false),
+              ),
+            ),
+            ValueListenableBuilder(
+              valueListenable: controller,
+              builder: (context, _, __) => Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.undo),
+                    onPressed: controller.canUndo ? controller.undo : null,
+                    tooltip: 'Undo (Ctrl+Z)',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.redo),
+                    onPressed: controller.canRedo ? controller.redo : null,
+                    tooltip: 'Redo (Ctrl+Shift+Z)',
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        // Path editor on top
-        Positioned.fill(
-          child: PathEditor(
-            controller: controller,
+        Expanded(
+          child: CallbackShortcuts(
+            bindings: {
+              SingleActivator(
+                LogicalKeyboardKey.keyZ,
+                meta: isMacOS,
+                control: !isMacOS,
+              ): controller.undo,
+              SingleActivator(
+                LogicalKeyboardKey.keyZ,
+                shift: true,
+                meta: isMacOS,
+                control: !isMacOS,
+              ): controller.redo,
+            },
+            child: Focus(
+              autofocus: true,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Background content
+                  Positioned.fill(
+                    child: FilledPath(
+                      controller: controller,
+                      color: Colors.blue.withAlpha(127),
+                      blendMode: BlendMode.srcOver,
+                    ),
+                  ),
+
+                  // Bounds visualization
+                  if (showBounds)
+                    Positioned.fill(
+                      child: ValueListenableBuilder(
+                        valueListenable: controller,
+                        builder: (context, _, __) {
+                          return CustomPaint(
+                            painter: _BoundsPainter(
+                              bounds: controller.calculateBoundingBox(2.0),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+
+                  // Path editor on top
+                  Positioned.fill(
+                    child: PathEditor(
+                      controller: controller,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
     );
+  }
+}
+
+class _BoundsPainter extends CustomPainter {
+  final Rect bounds;
+
+  _BoundsPainter({required this.bounds});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.red
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    // Draw the bounds rectangle
+    canvas.drawRect(bounds, paint);
+
+    // Draw the center point
+    canvas.drawCircle(
+      bounds.center,
+      3,
+      paint..style = PaintingStyle.fill,
+    );
+
+    // Draw diagonal guides
+    canvas.drawLine(
+      bounds.topLeft,
+      bounds.bottomRight,
+      paint..style = PaintingStyle.stroke,
+    );
+    canvas.drawLine(
+      bounds.topRight,
+      bounds.bottomLeft,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_BoundsPainter oldDelegate) {
+    return bounds != oldDelegate.bounds;
   }
 }
 

@@ -1,5 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:path_editor/path_editor.dart';
+import 'package:path_editor/src/controller/path_editor_controller.dart';
 import 'package:path_editor/src/model/editing.dart';
 
 void main() {
@@ -78,6 +80,115 @@ void main() {
 
     test('it returns a native path via getter', () {
       expect(identical(sut.value.path, sut.path), isTrue);
+    });
+
+    group('undo/redo tests', () {
+      test('it can undo point moves', () {
+        sut.updatePointPosition(PathPointIndex(0), const Offset(3, 4));
+        expect(sut.value.pathString, 'M3.0 4.0');
+
+        sut.undo();
+        expect(sut.value.pathString, 'M1.0 2.0');
+      });
+
+      test('it can redo point moves', () {
+        sut.updatePointPosition(PathPointIndex(0), const Offset(3, 4));
+        sut.undo();
+        sut.redo();
+        expect(sut.value.pathString, 'M3.0 4.0');
+      });
+
+      test('canUndo/canRedo are correct', () {
+        expect(sut.canUndo, isFalse);
+        expect(sut.canRedo, isFalse);
+
+        sut.updatePointPosition(PathPointIndex(0), const Offset(3, 4));
+        expect(sut.canUndo, isTrue);
+        expect(sut.canRedo, isFalse);
+
+        sut.undo();
+        expect(sut.canUndo, isFalse);
+        expect(sut.canRedo, isTrue);
+      });
+
+      test('new operation clears redo stack', () {
+        sut.updatePointPosition(PathPointIndex(0), const Offset(3, 4));
+        sut.undo();
+        expect(sut.canRedo, isTrue);
+
+        sut.updatePointPosition(PathPointIndex(0), const Offset(5, 6));
+        expect(sut.canRedo, isFalse);
+      });
+
+      test('respects max undo steps', () {
+        final localSut = PathEditorController('M1 2', maxUndoSteps: 2);
+
+        localSut.updatePointPosition(PathPointIndex(0), const Offset(3, 4));
+        localSut.updatePointPosition(PathPointIndex(0), const Offset(5, 6));
+        localSut.updatePointPosition(PathPointIndex(0), const Offset(7, 8));
+
+        expect(localSut.canUndo, isTrue);
+        localSut.undo();
+        localSut.undo();
+        expect(localSut.canUndo, isFalse);
+        expect(localSut.value.pathString, 'M3.0 4.0');
+      });
+    });
+
+    group('pan gesture tests', () {
+      test('creates single undo entry for pan sequence', () {
+        sut.beginPan();
+        sut.updatePointPosition(PathPointIndex(0), const Offset(3, 4));
+        sut.updatePointPosition(PathPointIndex(0), const Offset(5, 6));
+        sut.endPan();
+
+        expect(sut.value.pathString, 'M5.0 6.0');
+        sut.undo();
+        expect(sut.value.pathString, 'M1.0 2.0');
+      });
+
+      test('does not create undo entry if no changes during pan', () {
+        sut.beginPan();
+        sut.endPan();
+        expect(sut.canUndo, isFalse);
+      });
+
+      test('ignores nested pan calls', () {
+        sut.beginPan();
+        sut.beginPan(); // Should be ignored
+        sut.updatePointPosition(PathPointIndex(0), const Offset(3, 4));
+        sut.endPan();
+        sut.endPan(); // Should be ignored
+
+        expect(sut.value.pathString, 'M3.0 4.0');
+        sut.undo();
+        expect(sut.value.pathString, 'M1.0 2.0');
+      });
+    });
+
+    group('bounds checking tests', () {
+      test('returns zero rect for empty path', () {
+        sut.updatePath('');
+        expect(sut.calculateBoundingBox(2.0), Rect.zero);
+      });
+
+      test('includes stroke width in bounds', () {
+        sut.updatePath('M0 0L10 0');
+        final bounds = sut.calculateBoundingBox(2.0);
+        expect(bounds.top, -1.1); // Half stroke width + padding
+        expect(bounds.bottom, 1.1);
+      });
+
+      test('calculates correct bounds for cubic curves', () {
+        // Curve that extends beyond its control points
+        sut.updatePath('M0 0C0 10 10 10 10 0');
+        final bounds = sut.calculateBoundingBox(
+          2.0,
+          accurracy: BoundsCheckAccuracy.finest,
+        );
+        expect(bounds.top, lessThan(0));
+        expect(bounds.bottom, greaterThan(5)); // Should catch the curve's peak
+      });
     });
   });
 }
