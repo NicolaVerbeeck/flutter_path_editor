@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Setup Pages
         uses: actions/configure-pages@v5
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
       - run: flutter packages get
       - run: dart analyze --fatal-infos lib/
