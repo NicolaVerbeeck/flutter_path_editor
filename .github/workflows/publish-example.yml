@@ -31,7 +31,7 @@ jobs:
       - run: flutter build web --wasm --base-href /flutter_path_editor/
         working-directory: ./example
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3.0.1
+        uses: actions/upload-pages-artifact@v4.0.0
         with:
           path: "./example/build/web"
       - name: Deploy to GitHub Pages
