@@ -1,0 +1,10 @@
+analyzer:
+  exclude:
+    - web/**
+    - macos/**
+include: ../analysis_options.yaml
+
+linter:
+  rules:
+    # Demo widgets do not need to be documented like a published API.
+    public_member_api_docs: false
