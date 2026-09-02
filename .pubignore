@@ -15,3 +15,6 @@ build/
 analysis_options.yaml
 coverage/
 test/
+specs.md
+.fvm/
+.fvmrc

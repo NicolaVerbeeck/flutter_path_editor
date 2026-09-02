@@ -1,107 +1,118 @@
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:path_editor/src/config/path_editor_behavior.dart';
+import 'package:path_editor/src/config/path_editor_callbacks.dart';
+import 'package:path_editor/src/config/path_editor_cursors.dart';
+import 'package:path_editor/src/config/path_editor_modifiers.dart';
+import 'package:path_editor/src/config/path_editor_shortcuts.dart';
+import 'package:path_editor/src/config/path_editor_snapping.dart';
+import 'package:path_editor/src/config/path_editor_theme.dart';
+import 'package:path_editor/src/config/path_editor_viewport.dart';
 import 'package:path_editor/src/controller/path_editor_controller.dart';
-import 'package:path_editor/src/model/editing.dart';
-import 'package:path_editor/src/painting/path_painter.dart';
-import 'package:path_editor/src/painting/points_painter.dart';
-import 'package:path_editor/src/painting/segment_painter.dart';
-import 'package:path_editor/src/util/path_math.dart';
+import 'package:path_editor/src/interaction/tool_handler.dart';
+import 'package:path_editor/src/painting/path_editor_painter.dart';
 
-/// A widget that allows the user to edit a path
+/// An interactive editor for a vector path.
+///
+/// The editor draws the path of [controller] together with its nodes, Bézier
+/// handles and contextual indicators, and turns pointer and keyboard input
+/// into edits. Which tool is active, what is selected and what the path looks
+/// like all live on the controller, so a surrounding application can drive and
+/// observe the editor without reaching into the widget.
+///
+/// ```dart
+/// final controller = PathEditorController.empty();
+///
+/// PathEditor(
+///   controller: controller,
+///   theme: const PathEditorThemeData(strokeColor: Color(0xFF000000)),
+///   onSegmentCreated: (_) => openStrokePanel(),
+/// );
+/// ```
+///
+/// Everything the editor draws and every key it reacts to is configurable:
+/// see [PathEditorThemeData], [PathEditorCursors], [PathEditorModifiers],
+/// [PathEditorShortcuts], [PathEditorSnapping] and [PathEditorBehavior].
 class PathEditor extends StatefulWidget {
-  static const _defaiultPointHitRadius = 10.0;
-  static const _defaultControlPointHitRadius = 10.0;
-  static const _defaultMinSegmentDistance = 20.0;
-
-  /// The controller for the path
+  /// The controller holding the path, selection and active tool.
   final PathEditorController controller;
 
-  /// The offset to use when rendering the path.
-  /// This is useful when the widget is larger than the path to allow for
-  /// control points to be rendered outside of the path box
-  final Offset renderOffset;
+  /// The colours and sizes to draw with.
+  ///
+  /// Defaults to the nearest enclosing [PathEditorTheme], or to
+  /// [PathEditorThemeData.light] when there is none.
+  final PathEditorThemeData? theme;
 
-  /// The hit radius to use when checking if the 'cursor' is overlapping a point
-  final double pointHitRadius;
+  /// The cursor shown for each contextual state.
+  final PathEditorCursors cursors;
 
-  /// The hit radius to use when checking if the 'cursor' is overlapping a control point
-  final double controlPointHitRadius;
+  /// Which modifier key triggers which editing behaviour.
+  final PathEditorModifiers modifiers;
 
-  /// The minimum distance to consider a segment as 'hovered'
-  final double minSegmentDistance;
+  /// How positions snap while dragging and creating nodes.
+  final PathEditorSnapping snapping;
 
-  /// The stroke width of the control points
-  final double controlPointStrokeWidth;
+  /// Hit radii and other interaction tuning.
+  final PathEditorBehavior behavior;
 
-  /// The stroke width of the control point lines
-  final double controlPointLineStrokeWidth;
+  /// The pan and zoom applied to the path.
+  final PathEditorViewport viewport;
 
-  /// The radius of the control points
-  final double controlPointRadius;
+  /// The keyboard shortcuts of the editor.
+  ///
+  /// Defaults to [PathEditorShortcuts.defaults].
+  final Map<ShortcutActivator, Intent>? shortcuts;
 
-  /// The radius of the selected point
-  final double selectedPointRadius;
+  /// The focus node of the editor. One is created when this is `null`.
+  final FocusNode? focusNode;
 
-  /// The radius of the unselected point
-  final double unselectedPointRadius;
+  /// Whether the editor should grab focus when it is first shown.
+  final bool autofocus;
 
-  /// The radius of the insert point
-  final double insertPointRadius;
+  /// Called whenever the path changed.
+  final PathChangedCallback? onPathChanged;
 
-  /// The stroke width of the insert point
-  final double insertPointStrokeWidth;
+  /// Called whenever the selection changed.
+  final PathSelectionChangedCallback? onSelectionChanged;
 
-  /// The stroke width of the path
-  final double pathStrokeWidth;
+  /// Called whenever the active tool changed.
+  final PathToolChangedCallback? onToolChanged;
 
-  /// The color of the path
-  final Color strokeColor;
+  /// Called when the pen tool added a node.
+  final PathNodeAddedCallback? onNodeAdded;
 
-  /// The blend mode to use when rendering the elements
-  final BlendMode blendMode;
+  /// Called when nodes were removed.
+  final PathNodesRemovedCallback? onNodesRemoved;
 
-  /// The color of the highlighted segment
-  final Color segmentHighligtColor;
+  /// Called when a segment was drawn between two nodes.
+  ///
+  /// The first segment appears as the second node is placed, which is the
+  /// moment a stroke settings panel typically opens.
+  final PathSegmentCreatedCallback? onSegmentCreated;
 
-  /// The color of the control points
-  final Color controlPointColor;
+  /// Called when a subpath was closed.
+  final PathSubpathClosedCallback? onSubpathClosed;
 
-  /// The color of the control point lines
-  final Color controlPointLineColor;
-
-  /// The color of the selected point
-  final Color selectedPointColor;
-
-  /// The color of the unselected point
-  final Color unselectedPointColor;
-
-  /// The color of the insert point
-  final Color insertPointColor;
-
-  /// Creates a new path editor
+  /// Creates a path editor.
   const PathEditor({
     super.key,
     required this.controller,
-    this.renderOffset = Offset.zero,
-    this.pointHitRadius = _defaiultPointHitRadius,
-    this.controlPointHitRadius = _defaultControlPointHitRadius,
-    this.minSegmentDistance = _defaultMinSegmentDistance,
-    this.strokeColor = Colors.black,
-    this.pathStrokeWidth = 2.0,
-    this.blendMode = BlendMode.srcOver,
-    this.segmentHighligtColor = Colors.blue,
-    this.controlPointColor = Colors.green,
-    this.controlPointLineColor = Colors.green,
-    this.selectedPointColor = Colors.red,
-    this.unselectedPointColor = Colors.black,
-    this.insertPointColor = Colors.red,
-    this.insertPointRadius = 5.0,
-    this.controlPointStrokeWidth = 2.0,
-    this.controlPointRadius = 5.0,
-    this.selectedPointRadius = 8.0,
-    this.unselectedPointRadius = 5.0,
-    this.controlPointLineStrokeWidth = 2.5,
-    this.insertPointStrokeWidth = 3.0,
+    this.theme,
+    this.cursors = PathEditorCursors.defaults,
+    this.modifiers = PathEditorModifiers.defaults,
+    this.snapping = PathEditorSnapping.defaults,
+    this.behavior = PathEditorBehavior.defaults,
+    this.viewport = PathEditorViewport.identity,
+    this.shortcuts,
+    this.focusNode,
+    this.autofocus = false,
+    this.onPathChanged,
+    this.onSelectionChanged,
+    this.onToolChanged,
+    this.onNodeAdded,
+    this.onNodesRemoved,
+    this.onSegmentCreated,
+    this.onSubpathClosed,
   });
 
   @override
@@ -109,23 +120,24 @@ class PathEditor extends StatefulWidget {
 }
 
 class _PathEditorState extends State<PathEditor> {
-  var _points = <Offset>[];
-  var _controlPoints = <Offset>[];
+  late PathEditorToolHandler _handler;
+  late Listenable _repaint;
 
-  PathPointIndex? _selectedIndex;
-  PathSegmentIndex? _highlightedSegment;
-  ControlPointIndex? _selectedControlPointIndex;
+  /// Bumped whenever a modifier key is pressed or released, so the cursor and
+  /// indicators reflect what a click would do right now.
+  final ValueNotifier<int> _modifierRevision = ValueNotifier(0);
 
-  Offset? _indicatorPosition;
-  var _cursor = SystemMouseCursors.basic;
+  FocusNode? _internalFocusNode;
+
+  FocusNode get _focusNode =>
+      widget.focusNode ??
+      (_internalFocusNode ??= FocusNode(debugLabel: 'PathEditor'));
 
   @override
   void initState() {
     super.initState();
-
-    widget.controller.addListener(_rebuildPoints);
-
-    _rebuildPoints();
+    _attach(widget.controller);
+    HardwareKeyboard.instance.addHandler(_handleRawKey);
   }
 
   @override
@@ -133,267 +145,151 @@ class _PathEditorState extends State<PathEditor> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.controller != widget.controller) {
-      oldWidget.controller.removeListener(_rebuildPoints);
-      widget.controller.addListener(_rebuildPoints);
+      _detach(oldWidget.controller);
+      _attach(widget.controller);
+    } else {
+      _handler.updateConfiguration(
+        behavior: widget.behavior,
+        modifiers: widget.modifiers,
+        snapping: widget.snapping,
+        callbacks: _callbacks,
+        viewport: widget.viewport,
+      );
     }
-
-    _rebuildPoints();
   }
 
   @override
   void dispose() {
-    widget.controller.removeListener(_rebuildPoints);
+    HardwareKeyboard.instance.removeHandler(_handleRawKey);
+    _detach(widget.controller);
+    _modifierRevision.dispose();
+    _internalFocusNode?.dispose();
     super.dispose();
   }
 
-  void _rebuildPoints() {
-    setState(() {
-      _points = widget.controller.operators
-          .map(
-            (e) => e.map(
-              moveTo: (m) => Offset(m.x, m.y),
-              lineTo: (l) => Offset(l.x, l.y),
-              cubicTo: (c) => Offset(c.x, c.y),
-              close: (_) => null,
-            ),
-          )
-          .nonNulls
-          .toList();
-      _highlightedSegment = null;
+  void _attach(PathEditorController controller) {
+    _handler = PathEditorToolHandler(
+      controller: controller,
+      behavior: widget.behavior,
+      modifiers: widget.modifiers,
+      snapping: widget.snapping,
+      callbacks: _callbacks,
+      viewport: widget.viewport,
+    );
+    _repaint = Listenable.merge([controller, _handler, _modifierRevision]);
 
-      // Check if the selected index is still with the valid range
-      if (_selectedIndex != null && _selectedIndex!.value >= _points.length) {
-        _selectedIndex = null;
-        _selectedControlPointIndex = null;
-      }
-
-      _rebuildControlPoints();
-    });
+    controller.pathListenable.addListener(_handlePathChanged);
+    controller.selectionListenable.addListener(_handleSelectionChanged);
+    controller.toolListenable.addListener(_handleToolChanged);
   }
+
+  void _detach(PathEditorController controller) {
+    controller.pathListenable.removeListener(_handlePathChanged);
+    controller.selectionListenable.removeListener(_handleSelectionChanged);
+    controller.toolListenable.removeListener(_handleToolChanged);
+    _handler.dispose();
+  }
+
+  PathEditorCallbacks get _callbacks => PathEditorCallbacks(
+        onNodeAdded: widget.onNodeAdded,
+        onNodesRemoved: widget.onNodesRemoved,
+        onSegmentCreated: widget.onSegmentCreated,
+        onSubpathClosed: widget.onSubpathClosed,
+      );
+
+  void _handlePathChanged() =>
+      widget.onPathChanged?.call(widget.controller.path);
+
+  void _handleSelectionChanged() =>
+      widget.onSelectionChanged?.call(widget.controller.selection);
+
+  void _handleToolChanged() =>
+      widget.onToolChanged?.call(widget.controller.tool);
+
+  bool _handleRawKey(KeyEvent event) {
+    if (!_isModifier(event.logicalKey)) return false;
+    // Never consume the event; the editor only wants to re-evaluate what the
+    // current modifier state means for the cursor and indicators.
+    _modifierRevision.value++;
+    return false;
+  }
+
+  static bool _isModifier(LogicalKeyboardKey key) =>
+      key == LogicalKeyboardKey.shift ||
+      key == LogicalKeyboardKey.shiftLeft ||
+      key == LogicalKeyboardKey.shiftRight ||
+      key == LogicalKeyboardKey.alt ||
+      key == LogicalKeyboardKey.altLeft ||
+      key == LogicalKeyboardKey.altRight ||
+      key == LogicalKeyboardKey.control ||
+      key == LogicalKeyboardKey.controlLeft ||
+      key == LogicalKeyboardKey.controlRight ||
+      key == LogicalKeyboardKey.meta ||
+      key == LogicalKeyboardKey.metaLeft ||
+      key == LogicalKeyboardKey.metaRight;
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: _cursor,
-      onHover: _handleHover,
-      child: GestureDetector(
-        onTapDown: _handleCanvasTap,
-        onPanStart: _handlePanStart,
-        onPanUpdate: _handlePanUpdate,
-        onPanEnd: _handlePanEnd,
-        child: Container(
-          color: Colors.transparent,
-          child: Stack(
-            children: [
-              Positioned.fill(
-                left: widget.renderOffset.dx,
-                top: widget.renderOffset.dy,
-                child: CustomPaint(
-                  painter: PathPainter(
-                    path: widget.controller.path,
-                    strokeColor: widget.strokeColor,
-                    strokeWidth: widget.pathStrokeWidth,
-                    blendMode: widget.blendMode,
-                  ),
+    final theme = widget.theme ?? PathEditorTheme.of(context);
+
+    return ListenableBuilder(
+      listenable: _repaint,
+      builder: (context, _) => FocusableActionDetector(
+        focusNode: _focusNode,
+        autofocus: widget.autofocus,
+        mouseCursor: widget.cursors.resolve(_handler.cursorState),
+        shortcuts: widget.shortcuts ?? PathEditorShortcuts.defaults,
+        actions: buildPathEditorActions(
+          controller: widget.controller,
+          handler: _handler,
+        ),
+        child: MouseRegion(
+          onHover: (event) => _handler.handleHover(event.localPosition),
+          onExit: (_) => _handler.handleExit(),
+          child: Listener(
+            behavior: HitTestBehavior.opaque,
+            onPointerDown: _handlePointerDown,
+            onPointerMove: (event) => _handler.handlePointerMove(
+              event.localPosition,
+              pointer: event.pointer,
+            ),
+            onPointerUp: (event) => _handler.handlePointerUp(
+              event.localPosition,
+              pointer: event.pointer,
+            ),
+            onPointerCancel: (event) =>
+                _handler.handlePointerCancel(pointer: event.pointer),
+            child: RepaintBoundary(
+              child: CustomPaint(
+                size: Size.infinite,
+                painter: PathEditorPainter(
+                  path: widget.controller.path,
+                  selection: widget.controller.selection,
+                  theme: theme,
+                  viewport: widget.viewport,
+                  activeSegment: _handler.activeSegment,
+                  hoveredSegment: _handler.hoveredSegment,
+                  hoveredNode: _handler.hoveredNode,
+                  hoveredHandle: _handler.hoveredHandle,
+                  insertIndicator: _handler.insertIndicator,
+                  closeIndicator: _handler.closeIndicator,
+                  penAnchor: _handler.penAnchor,
+                  // The pointer only matters for the pen rubber band, so it is
+                  // withheld otherwise to avoid repainting on every hover.
+                  pointer: _handler.penAnchor == null ? null : _handler.pointer,
+                  snapGuides: _handler.snapGuides,
                 ),
               ),
-              Positioned.fill(
-                left: widget.renderOffset.dx,
-                top: widget.renderOffset.dy,
-                child: CustomPaint(
-                  painter: SegmentPainter(
-                    widget.controller.operators,
-                    _highlightedSegment,
-                    _indicatorPosition,
-                    highlightColor: widget.segmentHighligtColor,
-                    blendMode: widget.blendMode,
-                    segmentStrokeWidth: widget.pathStrokeWidth,
-                    insertPointRadius: widget.insertPointRadius,
-                    insertPointStrokeWidth: widget.insertPointStrokeWidth,
-                    insertPointColor: widget.insertPointColor,
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                left: widget.renderOffset.dx,
-                top: widget.renderOffset.dy,
-                child: CustomPaint(
-                  painter: PointsPainter(
-                    points: _points,
-                    selectedIndex: _selectedIndex,
-                    controlPoints: _controlPoints,
-                    controlPointColor: widget.controlPointColor,
-                    selectedPointColor: widget.selectedPointColor,
-                    unselectedPointColor: widget.unselectedPointColor,
-                    blendMode: widget.blendMode,
-                    controlPointStrokeWidth: widget.controlPointStrokeWidth,
-                    controlPointRadius: widget.controlPointRadius,
-                    selectedPointRadius: widget.selectedPointRadius,
-                    unselectedPointRadius: widget.unselectedPointRadius,
-                    controlPointLineStrokeWidth:
-                        widget.controlPointLineStrokeWidth,
-                    controlPointLineColor: widget.controlPointLineColor,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  void _handleHover(PointerHoverEvent details) {
-    final localPosition = details.localPosition - widget.renderOffset;
-
-    // Check if we are hovering over a control point
-    final controlPointIndex = findNearestControlPointIndex(
-      _controlPoints,
-      localPosition,
-      widget.controlPointHitRadius,
-    );
-
-    _selectedControlPointIndex = controlPointIndex;
-    if (controlPointIndex != null) {
-      setState(() {
-        _cursor = SystemMouseCursors.grab;
-        _highlightedSegment = null;
-        _indicatorPosition = null;
-      });
-      return;
-    }
-
-    // Check if we are hovering over a point
-    final nearestPointIndex =
-        findNearestIndex(_points, localPosition, widget.pointHitRadius);
-    if (nearestPointIndex != null) {
-      final newCursor = _selectedIndex == nearestPointIndex
-          ? SystemMouseCursors.grab
-          : SystemMouseCursors.click;
-
-      setState(() {
-        _cursor = newCursor;
-        _highlightedSegment = null;
-        _indicatorPosition = null;
-      });
-      return;
-    }
-
-    // Find a segment we are hovering over
-    final index = findClosestSegment(
-      widget.controller.operators,
-      localPosition,
-      widget.minSegmentDistance,
-    );
-    final indicatorPosition = index == null
-        ? null
-        : calculateIndicatorPosition(
-            widget.controller.operators,
-            localPosition,
-            index,
-          );
-    setState(() {
-      _cursor = SystemMouseCursors.basic;
-      _highlightedSegment = indicatorPosition != null ? index : null;
-      _indicatorPosition = indicatorPosition;
-    });
-  }
-
-  void _handlePanStart(DragStartDetails _) {
-    widget.controller.beginUpdate();
-    if (_selectedIndex != null) {
-      setState(() {
-        _cursor = SystemMouseCursors.grabbing;
-      });
-    }
-  }
-
-  void _handlePanUpdate(DragUpdateDetails details) {
-    final localPosition = details.localPosition - widget.renderOffset;
-    if (_selectedControlPointIndex != null) {
-      assert(_selectedIndex != null,
-          'Selected control point should have a selected point index');
-      widget.controller.updateControlPointPosition(
-        _selectedControlPointIndex!,
-        _selectedIndex!,
-        localPosition,
-      );
-    } else if (_selectedIndex != null) {
-      widget.controller.updatePointPosition(
-        _selectedIndex!,
-        localPosition,
-      );
-    }
-  }
-
-  void _handlePanEnd(DragEndDetails _) {
-    widget.controller.endUpdate();
-    if (_selectedIndex != null || _selectedControlPointIndex != null) {
-      setState(() {
-        _cursor = SystemMouseCursors.grab;
-      });
-    }
-  }
-
-  void _rebuildControlPoints() {
-    _controlPoints = _selectedIndex == null
-        ? []
-        : widget.controller.controlPointsAt(_selectedIndex!);
-
-    // Check if the selected control point is still valid
-    if (_selectedControlPointIndex != null &&
-        _selectedControlPointIndex!.value >= _controlPoints.length) {
-      _selectedControlPointIndex = null;
-    }
-  }
-
-  void _handleCanvasTap(TapDownDetails details) {
-    final localPosition = details.localPosition - widget.renderOffset;
-
-    final controlPointIndex = findNearestControlPointIndex(
-      _controlPoints,
-      localPosition,
-      widget.controlPointHitRadius,
-    );
-    if (controlPointIndex != null) {
-      setState(() {
-        _selectedControlPointIndex = controlPointIndex;
-        _cursor = SystemMouseCursors.grab;
-      });
-      return;
-    }
-
-    final point = findNearestIndex(
-      _points,
-      localPosition,
-      widget.pointHitRadius,
-    );
-
-    // If we are not hitting a point, perhaps we are inserting a new point
-    // in a segment
-    if (point == null && _indicatorPosition != null) {
-      final segment = _highlightedSegment;
-      assert(segment != null,
-          'Having an indicator should also have a segment that indicator applies to');
-
-      widget.controller.insertPoint(segment!, localPosition);
-
-      // If the parent widget does not rebuild the path, we need to rebuild
-      // the points manually
-      setState(() {
-        _highlightedSegment = null;
-        _indicatorPosition = null;
-        _selectedIndex = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _selectedIndex = point;
-      _selectedControlPointIndex = null;
-      _rebuildControlPoints();
-      _cursor =
-          point != null ? SystemMouseCursors.grab : SystemMouseCursors.basic;
-    });
+  void _handlePointerDown(PointerDownEvent event) {
+    // Clicking the canvas gives it focus so the keyboard shortcuts apply.
+    if (!_focusNode.hasFocus) _focusNode.requestFocus();
+    _handler.handlePointerDown(event.localPosition, pointer: event.pointer);
   }
 }

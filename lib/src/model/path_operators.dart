@@ -46,10 +46,10 @@ extension PathOpListExt on List<PathOperator> {
   }
 
   /// Helper method that converts the list to a full svg string
-  String toSvg() => map((op) => op.toSvg()).join('');
+  String toSvg() => map((op) => op.toSvg()).join();
 
-  /// Helper method that calls [map] on each element seperately
-  void switchMap<T>({
+  /// Helper method that calls [map] on each element separately
+  void switchMap({
     required void Function(MoveTo) moveTo,
     required void Function(LineTo) lineTo,
     required void Function(CubicTo) cubicTo,

@@ -1,16 +1,28 @@
-# example
+# path_editor example
 
-A new Flutter project.
+A demo of the `path_editor` package showing the pen tool and how configurable
+the editor is.
 
-## Getting Started
+## What it demonstrates
 
-This project is a starting point for a Flutter application.
+- Switching between the **select** and **pen** tools.
+- Drawing with the pen: click for corner points, click and drag for smooth
+  points, click a segment to insert a point, click the first point to close.
+- Converting the selection between corner, smooth and broken handles.
+- Removing points either preserving the shape or cutting the path; the cut
+  button disables itself when the cut is not allowed.
+- A stroke settings panel that opens automatically through `onSegmentCreated`
+  as the first segment appears, and drives the editor theme.
+- Toggling snapping, a dark canvas and a completely custom theme.
+- Zooming with the mouse wheel or the toolbar; the path scales while the
+  editing chrome keeps its size.
+- Undo and redo, and the live SVG output of the path.
 
-A few resources to get you started if this is your first Flutter project:
+## Running
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```sh
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The project ships without platform folders; run `flutter create .` first if
+your platform of choice is missing.

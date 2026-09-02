@@ -1,9 +1,9 @@
 name: path_editor
-description: "A Flutter widget for visually editing and manipulating SVG paths."
-version: 0.0.3
+description: "A Flutter widget for visually editing vector paths, with a configurable Figma style pen tool."
+version: 0.1.0-alpha.1
 homepage: https://github.com/NicolaVerbeeck/flutter_path_editor
 issue_tracker: https://github.com/NicolaVerbeeck/flutter_path_editor/issues
-topics: [ svg, path, editor ]
+topics: [ svg, path, editor, pen-tool, bezier ]
 
 
 environment:

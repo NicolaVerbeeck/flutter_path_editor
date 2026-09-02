@@ -1,4 +1,23 @@
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    - build/**
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    # A package is only as good as its documentation.
+    - public_member_api_docs
+    - always_declare_return_types
+    - avoid_redundant_argument_values
+    - prefer_final_locals
+    - unnecessary_lambdas
+    - unnecessary_parenthesis
+    - use_super_parameters
+
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

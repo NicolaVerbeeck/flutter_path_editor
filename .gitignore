@@ -31,3 +31,7 @@ migrate_working_dir/
 build/
 coverage/
 unit.test.json
+
+# FVM Version Cache
+.fvm/
+.fvmrc
