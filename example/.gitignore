@@ -53,5 +53,4 @@ ios/
 test/
 
 .metadata
-analysis_options.yaml
 pubspec.lock
