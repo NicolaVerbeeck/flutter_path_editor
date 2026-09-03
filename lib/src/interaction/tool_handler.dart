@@ -277,12 +277,7 @@ class PathEditorToolHandler extends ChangeNotifier {
     _hover = hit;
 
     controller.beginTransaction();
-    switch (controller.tool) {
-      case PathTool.pen:
-        _penPointerDown(scene, hit);
-      case PathTool.select:
-        _selectPointerDown(scene, hit);
-    }
+    _handlePointerDown(scene, hit);
     notifyListeners();
   }
 
@@ -338,11 +333,7 @@ class PathEditorToolHandler extends ChangeNotifier {
       controller.selection = controller.selection.selectOnly(reduceTo);
     }
 
-    _activePointer = null;
-    _drag = null;
-    _pressScene = null;
-    _reduceSelectionTo = null;
-    _guides = const [];
+    _resetPointerState();
     controller.commitTransaction();
 
     _hover = _hitTest(scene);
@@ -352,11 +343,7 @@ class PathEditorToolHandler extends ChangeNotifier {
   /// Handles the pointer interaction being cancelled, rolling back the drag.
   void handlePointerCancel({int pointer = 0}) {
     if (_activePointer != pointer) return;
-    _activePointer = null;
-    _drag = null;
-    _pressScene = null;
-    _reduceSelectionTo = null;
-    _guides = const [];
+    _resetPointerState();
     controller.cancelTransaction();
     notifyListeners();
   }
@@ -437,19 +424,29 @@ class PathEditorToolHandler extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _penPointerDown(Offset scene, PathHit hit) {
+  void _handlePointerDown(Offset scene, PathHit hit) {
     switch (hit) {
       case HandleHit(handle: final handle):
-        // Handles stay draggable with the pen tool, matching how the pen keeps
-        // reshaping the node it just placed.
-        controller.selection =
-            controller.selection.copyWith(activeHandle: handle);
-        _drag = _MoveHandle(controller.path, handle);
-
+        _startHandleDrag(handle);
+        return;
       case NodeHit(node: final node) || CloseTargetHit(node: final node)
           when _modifiers.bendPoint.isActive(_keyboard):
         _startBend(node);
+        return;
+      default:
+        switch (controller.tool) {
+          case PathTool.pen:
+            _penPointerDown(scene, hit);
+          case PathTool.select:
+            _selectPointerDown(scene, hit);
+        }
+    }
+  }
 
+  void _penPointerDown(Offset scene, PathHit hit) {
+    switch (hit) {
+      case HandleHit(handle: final handle):
+        _startHandleDrag(handle);
       case CloseTargetHit(node: final node):
         controller.closeSubpath(node.subpath);
         controller.selection = controller.selection
@@ -488,15 +485,7 @@ class PathEditorToolHandler extends ChangeNotifier {
   void _selectPointerDown(Offset scene, PathHit hit) {
     switch (hit) {
       case HandleHit(handle: final handle):
-        controller.selection = controller.selection.copyWith(
-          activeHandle: handle,
-        );
-        _drag = _MoveHandle(controller.path, handle);
-
-      case NodeHit(node: final node) || CloseTargetHit(node: final node)
-          when _modifiers.bendPoint.isActive(_keyboard):
-        _startBend(node);
-
+        _startHandleDrag(handle);
       case NodeHit(node: final node):
       case CloseTargetHit(node: final node):
         _startMovingNode(node, scene, extendSubpath: false);
@@ -519,6 +508,19 @@ class PathEditorToolHandler extends ChangeNotifier {
           _activeSegment = null;
         }
     }
+  }
+
+  void _startHandleDrag(HandleRef handle) {
+    controller.selection = controller.selection.copyWith(activeHandle: handle);
+    _drag = _MoveHandle(controller.path, handle);
+  }
+
+  void _resetPointerState() {
+    _activePointer = null;
+    _drag = null;
+    _pressScene = null;
+    _reduceSelectionTo = null;
+    _guides = const [];
   }
 
   /// Starts pulling the curvature out of an existing node.
