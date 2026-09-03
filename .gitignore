@@ -35,3 +35,4 @@ unit.test.json
 # FVM Version Cache
 .fvm/
 .fvmrc
+.agents/

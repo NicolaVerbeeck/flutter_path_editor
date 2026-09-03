@@ -351,10 +351,7 @@ class PathEditorController extends ChangeNotifier {
     final previous = _path.value;
     final previousSelection = _selection.value;
 
-    _path.value = next;
-    _cachedSvg = null;
-    _cachedUiPath = null;
-    _selection.value = nextSelection;
+    _setState(next, nextSelection);
 
     if (!isInTransaction && next != previous) {
       _pushUndo(previous, previousSelection);
@@ -376,11 +373,15 @@ class PathEditorController extends ChangeNotifier {
   }
 
   void _restore(EditablePath target, PathEditorSelection targetSelection) {
-    _path.value = target;
+    _setState(target, targetSelection.sanitized(target));
+    notifyListeners();
+  }
+
+  void _setState(EditablePath next, PathEditorSelection nextSelection) {
+    _path.value = next;
     _cachedSvg = null;
     _cachedUiPath = null;
-    _selection.value = targetSelection.sanitized(target);
-    notifyListeners();
+    _selection.value = nextSelection;
   }
 
   @override
