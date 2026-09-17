@@ -296,6 +296,7 @@ void main() {
         selectedNodeStyle: corner,
         hoveredNodeStyle: smooth,
         handleStyle: corner,
+        selectedHandleStyle: smooth,
         hoveredHandleStyle: smooth,
         handleLineColor: Color(0xFF0A0B0C),
         handleLineWidth: 5,
@@ -334,6 +335,7 @@ void main() {
         corner.shape,
       );
       expect(theme.resolveHandleStyle(), corner);
+      expect(theme.resolveHandleStyle(selected: true), smooth);
       expect(theme.resolveHandleStyle(hovered: true), smooth);
 
       const replacement = PathNodeStyle(
@@ -355,6 +357,7 @@ void main() {
         selectedNodeStyle: replacement,
         hoveredNodeStyle: replacement,
         handleStyle: replacement,
+        selectedHandleStyle: replacement,
         hoveredHandleStyle: replacement,
         handleLineColor: const Color(0xFF252525),
         handleLineWidth: 25,

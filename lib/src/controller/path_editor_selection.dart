@@ -15,8 +15,8 @@ enum PathTool {
 ///
 /// The selection tracks which nodes are selected, which node is the "active"
 /// one (the last one the user touched, whose handles are shown), which handle
-/// is currently being manipulated, and which subpath the pen tool is currently
-/// extending.
+/// is selected or currently being manipulated, and which subpath the pen tool
+/// is currently extending.
 @immutable
 class PathEditorSelection {
   /// Every selected node.
@@ -27,7 +27,7 @@ class PathEditorSelection {
   /// The active node is always part of [nodes] when it is not `null`.
   final NodeRef? active;
 
-  /// The handle currently being dragged, if any.
+  /// The handle currently selected or being dragged, if any.
   final HandleRef? activeHandle;
 
   /// The subpath the pen tool is currently appending to, if any.
@@ -50,6 +50,12 @@ class PathEditorSelection {
         active = node,
         activeHandle = null;
 
+  /// Creates a selection containing exactly [handle].
+  PathEditorSelection.singleHandle(HandleRef handle, {this.pendingSubpath})
+      : nodes = {handle.node},
+        active = handle.node,
+        activeHandle = handle;
+
   /// Whether nothing is selected.
   bool get isEmpty => nodes.isEmpty;
 
@@ -61,6 +67,32 @@ class PathEditorSelection {
 
   /// Whether [ref] is part of this selection.
   bool contains(NodeRef ref) => nodes.contains(ref);
+
+  /// The handles that should be painted as selected in [path].
+  ///
+  /// When the selected handle belongs to a smooth node, the opposite linked
+  /// handle is included too because moving either handle affects both.
+  Set<HandleRef> selectedHandlesIn(EditablePath path) {
+    final selected = activeHandle;
+    if (selected == null) return const {};
+    if (!nodes.contains(selected.node) || !path.contains(selected.node)) {
+      return const {};
+    }
+
+    final node = path.nodeAt(selected.node);
+    if (node.handle(selected.handle) == null) return const {};
+
+    final handles = {selected};
+    final opposite = selected.opposite;
+    if (node.type.isSmooth && node.handle(opposite.handle) != null) {
+      handles.add(opposite);
+    }
+    return handles;
+  }
+
+  /// Whether [ref] is a selected handle in [path].
+  bool containsHandle(HandleRef ref, EditablePath path) =>
+      selectedHandlesIn(path).contains(ref);
 
   /// Returns a copy of this selection with the given properties replaced.
   ///
@@ -89,6 +121,14 @@ class PathEditorSelection {
   PathEditorSelection selectOnly(NodeRef ref) => PathEditorSelection(
         nodes: {ref},
         active: ref,
+        pendingSubpath: pendingSubpath,
+      );
+
+  /// Returns a selection containing only [ref].
+  PathEditorSelection selectHandle(HandleRef ref) => PathEditorSelection(
+        nodes: {ref.node},
+        active: ref.node,
+        activeHandle: ref,
         pendingSubpath: pendingSubpath,
       );
 
@@ -126,11 +166,12 @@ class PathEditorSelection {
   PathEditorSelection sanitized(EditablePath path) {
     final valid = nodes.where(path.contains).toSet();
     final validActive =
-        active != null && path.contains(active!) ? active : null;
-    final validHandle =
-        activeHandle != null && path.contains(activeHandle!.node)
-            ? activeHandle
-            : null;
+        active != null && valid.contains(active!) ? active : null;
+    final validHandle = activeHandle != null &&
+            valid.contains(activeHandle!.node) &&
+            path.nodeAt(activeHandle!.node).handle(activeHandle!.handle) != null
+        ? activeHandle
+        : null;
     final validPending = pendingSubpath != null &&
             pendingSubpath! < path.subpaths.length &&
             !path.subpaths[pendingSubpath!].closed

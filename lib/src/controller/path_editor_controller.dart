@@ -334,6 +334,18 @@ class PathEditorController extends ChangeNotifier {
     );
   }
 
+  /// Selects exactly [handle], if that handle exists.
+  void selectHandle(HandleRef handle) {
+    final valid = path.contains(handle.node) &&
+        path.nodeAt(handle.node).handle(handle.handle) != null;
+    selection = valid
+        ? PathEditorSelection.singleHandle(
+            handle,
+            pendingSubpath: selection.pendingSubpath,
+          )
+        : PathEditorSelection(pendingSubpath: selection.pendingSubpath);
+  }
+
   /// Selects every node of the path.
   void selectAll() => select(path.nodeRefs);
 

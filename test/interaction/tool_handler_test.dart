@@ -513,6 +513,24 @@ void main() {
       expect(handler.hover, isA<HandleHit>());
       expect(handler.cursorState, PathEditorCursorState.adjustHandle);
     });
+
+    test('clicking a handle selects only that handle and its node', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0C0 0 -10 0 50 0C110 0 0 0 100 0L150 0',
+      );
+      final handler = handlerFor(controller);
+
+      controller.selectAll();
+      handler.click(const Offset(110, 0));
+
+      const handle = HandleRef(NodeRef(0, 1), NodeHandle.outgoing);
+      expect(controller.selection.nodes, {handle.node});
+      expect(controller.selection.activeHandle, handle);
+      expect(controller.selection.selectedHandlesIn(controller.path), {
+        handle,
+        handle.opposite,
+      });
+    });
   });
 
   group('bending existing points', () {
@@ -915,6 +933,26 @@ void main() {
       handler.click(const Offset(100, 0));
       expect(handler.removeSelection(), isTrue);
       expect(controller.svg, 'M100.0 100.0L0.0 0.0');
+    });
+
+    test('deleting a selected handle converts its node to a corner', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0C0 0 -10 0 50 0C110 0 0 0 100 0',
+      );
+      final handler = handlerFor(controller);
+
+      handler.click(const Offset(50, 0));
+      handler.click(const Offset(110, 0));
+      expect(controller.selection.activeHandle,
+          const HandleRef(NodeRef(0, 1), NodeHandle.outgoing));
+
+      expect(handler.removeSelection(), isTrue);
+
+      final node = controller.path.nodeAt(const NodeRef(0, 1));
+      expect(node.type, PathNodeType.corner);
+      expect(node.hasHandles, isFalse);
+      expect(controller.selection.nodes, {const NodeRef(0, 1)});
+      expect(controller.selection.activeHandle, isNull);
     });
   });
 
