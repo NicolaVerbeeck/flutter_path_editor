@@ -387,6 +387,25 @@ class PathEditorToolHandler extends ChangeNotifier {
   /// Returns `false` when the removal is not allowed, which happens when a cut
   /// would leave the path with more than one open subpath.
   bool removeSelection({NodeRemoval? mode}) {
+    final selectedHandle = controller.selection.activeHandle;
+    if (selectedHandle != null &&
+        controller.path.contains(selectedHandle.node) &&
+        controller.path
+                .nodeAt(selectedHandle.node)
+                .handle(selectedHandle.handle) !=
+            null) {
+      controller.transaction(
+        () => controller.convertNodes(
+          [selectedHandle.node],
+          PathNodeType.corner,
+        ),
+      );
+      final scene = _pointer;
+      _hover = scene == null ? const NoHit() : _hitTest(scene);
+      notifyListeners();
+      return true;
+    }
+
     final nodes = controller.selection.nodes.toList();
     if (nodes.isEmpty) return false;
 
@@ -511,7 +530,7 @@ class PathEditorToolHandler extends ChangeNotifier {
   }
 
   void _startHandleDrag(HandleRef handle) {
-    controller.selection = controller.selection.copyWith(activeHandle: handle);
+    controller.selectHandle(handle);
     _drag = _MoveHandle(controller.path, handle);
   }
 
@@ -551,7 +570,10 @@ class PathEditorToolHandler extends ChangeNotifier {
       } else if (selection.contains(node)) {
         // Keep the multi selection so it can be dragged as a whole, and only
         // reduce it on release if this turns out to be a plain click.
-        controller.selection = selection.copyWith(active: node);
+        controller.selection = selection.copyWith(
+          active: node,
+          clearActiveHandle: true,
+        );
         _reduceSelectionTo = node;
       } else {
         controller.selection = selection.selectOnly(node);

@@ -215,6 +215,7 @@ class PathEditorPainter extends CustomPainter {
   void _paintHandles(Canvas canvas) {
     if (selection.isEmpty) return;
 
+    final selectedHandles = selection.selectedHandlesIn(path);
     final linePaint = Paint()
       ..color = theme.handleLineColor
       ..style = PaintingStyle.stroke
@@ -231,12 +232,14 @@ class PathEditorPainter extends CustomPainter {
         if (handle == null) continue;
 
         final position = viewport.toScreen(handle);
+        final handleRef = HandleRef(ref, which);
         canvas.drawLine(anchor, position, linePaint);
         _drawShape(
           canvas,
           position,
           theme.resolveHandleStyle(
-            hovered: hoveredHandle == HandleRef(ref, which),
+            selected: selectedHandles.contains(handleRef),
+            hovered: hoveredHandle == handleRef,
           ),
         );
       }

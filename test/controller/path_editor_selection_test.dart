@@ -3,6 +3,9 @@ import 'package:path_editor/path_editor.dart';
 
 void main() {
   final path = EditablePath.fromSvg('M0 0L10 0L20 0');
+  final linkedHandlePath = EditablePath.fromSvg(
+    'M0 0C0 0 -10 0 10 0C30 0 0 0 20 0',
+  );
   const first = NodeRef(0, 0);
   const middle = NodeRef(0, 1);
   const last = NodeRef(0, 2);
@@ -27,6 +30,11 @@ void main() {
       expect(selection.isMultiple, isTrue);
       expect(selection.contains(first), isTrue);
       expect(selection.contains(last), isFalse);
+      expect(selection.containsHandle(handle, linkedHandlePath), isTrue);
+      expect(selection.selectedHandlesIn(linkedHandlePath), {
+        handle,
+        handle.opposite,
+      });
     });
 
     test('copies and clears each optional property', () {
@@ -62,6 +70,9 @@ void main() {
       final selection = PathEditorSelection.single(first, pendingSubpath: 0);
       expect(selection.selectOnly(last).nodes, {last});
       expect(selection.selectOnly(last).active, last);
+      expect(selection.selectHandle(handle).nodes, {middle});
+      expect(selection.selectHandle(handle).active, middle);
+      expect(selection.selectHandle(handle).activeHandle, handle);
       expect(selection.add(middle).nodes, {first, middle});
       expect(selection.add(middle).active, middle);
       expect(selection.remove(first).nodes, isEmpty);
@@ -89,6 +100,9 @@ void main() {
       final unchanged = PathEditorSelection.single(first, pendingSubpath: 0);
       expect(unchanged.sanitized(path), same(unchanged));
 
+      final missingHandle = PathEditorSelection.singleHandle(handle);
+      expect(missingHandle.sanitized(path).activeHandle, isNull);
+
       final closed = EditablePath.fromSvg('M0 0L10 0Z');
       expect(
         PathEditorSelection.single(first, pendingSubpath: 0)
@@ -99,12 +113,12 @@ void main() {
     });
 
     test('reports selected node types and value semantics', () {
-      final smoothPath = EditablePath.fromSvg('M0 0L10 0C15 0 15 10 20 10');
       final selection = PathEditorSelection(
         nodes: {first, middle, last, const NodeRef(2, 0)},
         active: first,
       );
 
+      final smoothPath = EditablePath.fromSvg('M0 0L10 0C15 0 15 10 20 10');
       expect(selection.typesIn(smoothPath), {
         PathNodeType.corner,
         PathNodeType.disconnected,

@@ -132,6 +132,9 @@ class PathEditorThemeData {
   /// How a Bézier handle is drawn.
   final PathNodeStyle handleStyle;
 
+  /// How a selected Bézier handle is drawn.
+  final PathNodeStyle selectedHandleStyle;
+
   /// How the handle under the pointer is drawn.
   final PathNodeStyle hoveredHandleStyle;
 
@@ -229,6 +232,13 @@ class PathEditorThemeData {
       borderColor: _surface,
       borderWidth: 0.5,
     ),
+    this.selectedHandleStyle = const PathNodeStyle(
+      shape: PathNodeShape.circle,
+      radius: 4,
+      fillColor: _surface,
+      borderColor: _accent,
+      borderWidth: 1.5,
+    ),
     this.hoveredHandleStyle = const PathNodeStyle(
       shape: PathNodeShape.circle,
       radius: 4,
@@ -292,6 +302,13 @@ class PathEditorThemeData {
       borderColor: Color(0xFF1E1E1E),
       borderWidth: 0.5,
     ),
+    selectedHandleStyle: PathNodeStyle(
+      shape: PathNodeShape.circle,
+      radius: 4,
+      fillColor: Color(0xFF1E1E1E),
+      borderColor: _accent,
+      borderWidth: 1.5,
+    ),
     hoveredHandleStyle: PathNodeStyle(
       shape: PathNodeShape.circle,
       radius: 4,
@@ -319,8 +336,14 @@ class PathEditorThemeData {
   }
 
   /// Returns the style to draw a handle with.
-  PathNodeStyle resolveHandleStyle({bool hovered = false}) =>
-      hovered ? hoveredHandleStyle : handleStyle;
+  PathNodeStyle resolveHandleStyle({
+    bool selected = false,
+    bool hovered = false,
+  }) {
+    if (selected) return selectedHandleStyle;
+    if (hovered) return hoveredHandleStyle;
+    return handleStyle;
+  }
 
   /// Returns a copy of this theme with the given properties replaced.
   PathEditorThemeData copyWith({
@@ -335,6 +358,7 @@ class PathEditorThemeData {
     PathNodeStyle? selectedNodeStyle,
     PathNodeStyle? hoveredNodeStyle,
     PathNodeStyle? handleStyle,
+    PathNodeStyle? selectedHandleStyle,
     PathNodeStyle? hoveredHandleStyle,
     Color? handleLineColor,
     double? handleLineWidth,
@@ -366,6 +390,7 @@ class PathEditorThemeData {
         selectedNodeStyle: selectedNodeStyle ?? this.selectedNodeStyle,
         hoveredNodeStyle: hoveredNodeStyle ?? this.hoveredNodeStyle,
         handleStyle: handleStyle ?? this.handleStyle,
+        selectedHandleStyle: selectedHandleStyle ?? this.selectedHandleStyle,
         hoveredHandleStyle: hoveredHandleStyle ?? this.hoveredHandleStyle,
         handleLineColor: handleLineColor ?? this.handleLineColor,
         handleLineWidth: handleLineWidth ?? this.handleLineWidth,
@@ -414,6 +439,11 @@ class PathEditorThemeData {
         hoveredNodeStyle:
             PathNodeStyle.lerp(a.hoveredNodeStyle, b.hoveredNodeStyle, t),
         handleStyle: PathNodeStyle.lerp(a.handleStyle, b.handleStyle, t),
+        selectedHandleStyle: PathNodeStyle.lerp(
+          a.selectedHandleStyle,
+          b.selectedHandleStyle,
+          t,
+        ),
         hoveredHandleStyle:
             PathNodeStyle.lerp(a.hoveredHandleStyle, b.hoveredHandleStyle, t),
         handleLineColor: Color.lerp(a.handleLineColor, b.handleLineColor, t)!,
@@ -459,6 +489,7 @@ class PathEditorThemeData {
           selectedNodeStyle == other.selectedNodeStyle &&
           hoveredNodeStyle == other.hoveredNodeStyle &&
           handleStyle == other.handleStyle &&
+          selectedHandleStyle == other.selectedHandleStyle &&
           hoveredHandleStyle == other.hoveredHandleStyle &&
           handleLineColor == other.handleLineColor &&
           handleLineWidth == other.handleLineWidth &&
@@ -491,6 +522,7 @@ class PathEditorThemeData {
         selectedNodeStyle,
         hoveredNodeStyle,
         handleStyle,
+        selectedHandleStyle,
         hoveredHandleStyle,
         handleLineColor,
         handleLineWidth,

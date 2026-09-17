@@ -103,6 +103,19 @@ void main() {
 
       expect(controller.selection.nodes, hasLength(3));
     });
+
+    test('selects a handle when it exists', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0C0 0 -10 0 50 0C110 0 0 0 100 0',
+      );
+      const handle = HandleRef(NodeRef(0, 1), NodeHandle.outgoing);
+
+      controller.selectHandle(handle);
+
+      expect(controller.selection.nodes, {handle.node});
+      expect(controller.selection.active, handle.node);
+      expect(controller.selection.activeHandle, handle);
+    });
   });
 
   group('undo and redo', () {
