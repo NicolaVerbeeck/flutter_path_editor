@@ -599,6 +599,25 @@ void main() {
       expect(node.incoming, const Offset(50, -40));
     });
 
+    test('takes precedence over the break modifier', () {
+      final controller = PathEditorController.fromSvg('M0 0L50 0L100 0');
+      final handler = handlerFor(
+        controller,
+        modifiers: PathEditorModifiers(
+          bendPoint: alwaysHeld,
+          breakHandle: alwaysHeld,
+        ),
+      );
+
+      handler.drag(const Offset(50, 0), const Offset(80, 30));
+
+      final node = controller.path.nodeAt(const NodeRef(0, 1));
+      expect(node.type, PathNodeType.mirrored,
+          reason: 'bending still grows the symmetric pair');
+      expect(node.outgoing, const Offset(80, 30));
+      expect(node.incoming, const Offset(20, -30));
+    });
+
     test('a click without a drag leaves the point untouched', () {
       final controller = PathEditorController.fromSvg('M0 0L50 0L100 0');
       final handler = bender(controller);

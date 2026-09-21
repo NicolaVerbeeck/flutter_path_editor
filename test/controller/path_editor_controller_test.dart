@@ -270,6 +270,32 @@ void main() {
       expect(controller.canUndo, isTrue);
     });
 
+    test('reopens subpaths and forwards handle edit options', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0L10 0L20 0Z',
+      );
+
+      controller.openSubpath(0);
+      expect(controller.path.subpaths.single.closed, isFalse);
+      expect(controller.canUndo, isTrue);
+
+      controller.clearHistory();
+      const ref = HandleRef(NodeRef(0, 1), NodeHandle.outgoing);
+      controller.setHandle(ref, const Offset(15, 5));
+      expect(controller.path.nodeAt(ref.node).outgoing, const Offset(15, 5));
+
+      controller.setHandle(
+        ref,
+        const Offset(20, 10),
+        breakLink: true,
+        restoreOpposite: true,
+      );
+      final node = controller.path.nodeAt(ref.node);
+      expect(node.outgoing, const Offset(20, 10));
+      expect(node.type, PathNodeType.disconnected);
+      expect(controller.canUndo, isTrue);
+    });
+
     test('computes bounds with an optional stroke', () {
       final controller = PathEditorController.fromSvg('M0 0L10 10');
 
