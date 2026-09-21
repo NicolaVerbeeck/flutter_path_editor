@@ -384,6 +384,11 @@ class PathEditorToolHandler extends ChangeNotifier {
 
   /// Removes the current selection.
   ///
+  /// When a handle is selected, only that handle is removed: it collapses onto
+  /// its node, straightening that side of the point. Removing the last handle
+  /// of a node turns it into a corner. Otherwise the selected nodes are
+  /// removed.
+  ///
   /// Returns `false` when the removal is not allowed, which happens when a cut
   /// would leave the path with more than one open subpath.
   bool removeSelection({NodeRemoval? mode}) {
@@ -394,12 +399,7 @@ class PathEditorToolHandler extends ChangeNotifier {
                 .nodeAt(selectedHandle.node)
                 .handle(selectedHandle.handle) !=
             null) {
-      controller.transaction(
-        () => controller.convertNodes(
-          [selectedHandle.node],
-          PathNodeType.corner,
-        ),
-      );
+      controller.transaction(() => controller.clearHandle(selectedHandle));
       final scene = _pointer;
       _hover = scene == null ? const NoHit() : _hitTest(scene);
       notifyListeners();
@@ -653,6 +653,7 @@ class PathEditorToolHandler extends ChangeNotifier {
       HandleRef(drag.node, NodeHandle.outgoing),
       snapped.position,
       breakLink: _modifiers.breakHandle.isActive(_keyboard),
+      restoreOpposite: drag.bend,
     );
   }
 

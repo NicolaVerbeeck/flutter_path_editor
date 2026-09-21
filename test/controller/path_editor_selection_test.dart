@@ -31,10 +31,9 @@ void main() {
       expect(selection.contains(first), isTrue);
       expect(selection.contains(last), isFalse);
       expect(selection.containsHandle(handle, linkedHandlePath), isTrue);
-      expect(selection.selectedHandlesIn(linkedHandlePath), {
-        handle,
-        handle.opposite,
-      });
+      expect(selection.containsHandle(handle.opposite, linkedHandlePath),
+          isFalse);
+      expect(selection.selectedHandlesIn(linkedHandlePath), {handle});
     });
 
     test('copies and clears each optional property', () {
