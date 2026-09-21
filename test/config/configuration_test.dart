@@ -216,6 +216,58 @@ void main() {
   });
 
   group('PathEditorSnapping', () {
+    test('compares guides and results by value', () {
+      const guide = SnapGuide(
+        start: Offset(1, 2),
+        end: Offset(3, 4),
+        kind: SnapKind.horizontalAxis,
+      );
+      const sameGuide = SnapGuide(
+        start: Offset(1, 2),
+        end: Offset(3, 4),
+        kind: SnapKind.horizontalAxis,
+      );
+      const pointGuide = SnapGuide(
+        start: Offset.zero,
+        end: Offset.zero,
+        kind: SnapKind.node,
+      );
+      const result = SnapResult(position: Offset(3, 4), guides: [guide]);
+      const sameResult =
+          SnapResult(position: Offset(3, 4), guides: [sameGuide]);
+
+      expect(guide.isPoint, isFalse);
+      expect(pointGuide.isPoint, isTrue);
+      expect(guide.toString(),
+          'SnapGuide(horizontalAxis, Offset(1.0, 2.0) -> Offset(3.0, 4.0))');
+      expect(guide, sameGuide);
+      expect(guide.hashCode, sameGuide.hashCode);
+      expect(
+          guide,
+          isNot(const SnapGuide(
+            start: Offset(1, 2),
+            end: Offset(3, 4),
+            kind: SnapKind.verticalAxis,
+          )));
+      expect(
+          result,
+          const SnapResult(
+            position: Offset(3, 4),
+            guides: [
+              SnapGuide(
+                start: Offset(1, 2),
+                end: Offset(3, 4),
+                kind: SnapKind.horizontalAxis,
+              ),
+            ],
+          ));
+      expect(result.didSnap, isTrue);
+      expect(result.hashCode, sameResult.hashCode);
+      expect(const SnapResult.none(Offset.zero).didSnap, isFalse);
+      expect(const SnapResult.none(Offset.zero),
+          const SnapResult(position: Offset.zero));
+    });
+
     test('copies, compares and hashes every setting', () {
       const snapping = PathEditorSnapping(
         enabled: false,

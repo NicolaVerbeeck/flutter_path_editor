@@ -286,9 +286,23 @@ class PathEditorController extends ChangeNotifier {
 
   /// Moves the handle [ref] points at to [position].
   ///
-  /// Set [breakLink] to move the handle independently of its partner.
-  void setHandle(HandleRef ref, Offset position, {bool breakLink = false}) =>
-      _apply(path.setHandle(ref, position, breakLink: breakLink));
+  /// Set [breakLink] to move the handle independently of its partner, or
+  /// [restoreOpposite] to grow a symmetric partner for a handle that was
+  /// removed.
+  void setHandle(
+    HandleRef ref,
+    Offset position, {
+    bool breakLink = false,
+    bool restoreOpposite = false,
+  }) =>
+      _apply(
+        path.setHandle(
+          ref,
+          position,
+          breakLink: breakLink,
+          restoreOpposite: restoreOpposite,
+        ),
+      );
 
   /// Removes the handle [ref] points at.
   void clearHandle(HandleRef ref) => _apply(path.clearHandle(ref));

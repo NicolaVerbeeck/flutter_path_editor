@@ -119,15 +119,25 @@ extension PathEdits on EditablePath {
   /// tool relies on when a click turns into a drag. Passing [breakLink]
   /// converts the node to [PathNodeType.disconnected] instead, leaving the
   /// opposite handle exactly where it is.
+  ///
+  /// Passing [restoreOpposite] grows that symmetric pair on a node that lost
+  /// one of its two handles, turning it back into a smooth node. This is what
+  /// the bend gesture uses to undo a handle removal. It takes precedence over
+  /// [breakLink] when both are passed.
   EditablePath setHandle(
     HandleRef ref,
     Offset position, {
     bool breakLink = false,
+    bool restoreOpposite = false,
   }) {
     final node = nodeAt(ref.node);
+    final growsPair = (node.type == PathNodeType.corner && !node.hasHandles) ||
+        (restoreOpposite && !(node.hasIncoming && node.hasOutgoing));
 
-    if (node.type == PathNodeType.corner && !node.hasHandles) {
-      if (breakLink) {
+    if (growsPair) {
+      // [restoreOpposite] wins over [breakLink]: growing the pair back is the
+      // whole point of the bend gesture, even when the break modifier is held.
+      if (breakLink && !restoreOpposite) {
         return replaceNode(
           ref.node,
           node

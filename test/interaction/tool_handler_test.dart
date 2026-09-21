@@ -526,10 +526,7 @@ void main() {
       const handle = HandleRef(NodeRef(0, 1), NodeHandle.outgoing);
       expect(controller.selection.nodes, {handle.node});
       expect(controller.selection.activeHandle, handle);
-      expect(controller.selection.selectedHandlesIn(controller.path), {
-        handle,
-        handle.opposite,
-      });
+      expect(controller.selection.selectedHandlesIn(controller.path), {handle});
     });
   });
 
@@ -582,6 +579,43 @@ void main() {
       expect(node.outgoing, const Offset(50, 40));
       expect(node.incoming, const Offset(-10, 5),
           reason: 'the broken handle is left alone');
+    });
+
+    test('restores a removed handle into a smooth pair', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0C0 0 -10 0 50 0C110 0 0 0 100 0',
+      );
+      final selecting = handlerFor(controller);
+      selecting.click(const Offset(50, 0));
+      selecting.click(const Offset(110, 0));
+      expect(selecting.removeSelection(), isTrue);
+      expect(controller.path.nodeAt(const NodeRef(0, 1)).outgoing, isNull);
+
+      bender(controller).drag(const Offset(50, 0), const Offset(50, 40));
+
+      final node = controller.path.nodeAt(const NodeRef(0, 1));
+      expect(node.type, PathNodeType.mirrored);
+      expect(node.outgoing, const Offset(50, 40));
+      expect(node.incoming, const Offset(50, -40));
+    });
+
+    test('takes precedence over the break modifier', () {
+      final controller = PathEditorController.fromSvg('M0 0L50 0L100 0');
+      final handler = handlerFor(
+        controller,
+        modifiers: PathEditorModifiers(
+          bendPoint: alwaysHeld,
+          breakHandle: alwaysHeld,
+        ),
+      );
+
+      handler.drag(const Offset(50, 0), const Offset(80, 30));
+
+      final node = controller.path.nodeAt(const NodeRef(0, 1));
+      expect(node.type, PathNodeType.mirrored,
+          reason: 'bending still grows the symmetric pair');
+      expect(node.outgoing, const Offset(80, 30));
+      expect(node.incoming, const Offset(20, -30));
     });
 
     test('a click without a drag leaves the point untouched', () {
@@ -935,7 +969,7 @@ void main() {
       expect(controller.svg, 'M100.0 100.0L0.0 0.0');
     });
 
-    test('deleting a selected handle converts its node to a corner', () {
+    test('deleting a selected handle only removes that handle', () {
       final controller = PathEditorController.fromSvg(
         'M0 0C0 0 -10 0 50 0C110 0 0 0 100 0',
       );
@@ -949,8 +983,31 @@ void main() {
       expect(handler.removeSelection(), isTrue);
 
       final node = controller.path.nodeAt(const NodeRef(0, 1));
-      expect(node.type, PathNodeType.corner);
+      expect(node.outgoing, isNull);
+      expect(node.incoming, const Offset(-10, 0));
+      expect(node.type, PathNodeType.disconnected);
+      expect(controller.selection.nodes, {const NodeRef(0, 1)});
+      expect(controller.selection.activeHandle, isNull);
+    });
+
+    test('deleting the last handle turns the node into a corner', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0C0 0 -10 0 50 0C110 0 0 0 100 0',
+      );
+      final handler = handlerFor(controller);
+
+      handler.click(const Offset(50, 0));
+      handler.click(const Offset(110, 0));
+      expect(handler.removeSelection(), isTrue);
+
+      handler.click(const Offset(-10, 0));
+      expect(controller.selection.activeHandle,
+          const HandleRef(NodeRef(0, 1), NodeHandle.incoming));
+      expect(handler.removeSelection(), isTrue);
+
+      final node = controller.path.nodeAt(const NodeRef(0, 1));
       expect(node.hasHandles, isFalse);
+      expect(node.type, PathNodeType.corner);
       expect(controller.selection.nodes, {const NodeRef(0, 1)});
       expect(controller.selection.activeHandle, isNull);
     });

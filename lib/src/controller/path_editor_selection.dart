@@ -70,24 +70,20 @@ class PathEditorSelection {
 
   /// The handles that should be painted as selected in [path].
   ///
-  /// When the selected handle belongs to a smooth node, the opposite linked
-  /// handle is included too because moving either handle affects both.
+  /// Only the handle the user interacted with is selected. The opposite handle
+  /// of a smooth node stays unselected even though moving either handle
+  /// affects both, so deleting a handle only ever removes the one that is
+  /// highlighted.
   Set<HandleRef> selectedHandlesIn(EditablePath path) {
     final selected = activeHandle;
     if (selected == null) return const {};
     if (!nodes.contains(selected.node) || !path.contains(selected.node)) {
       return const {};
     }
-
-    final node = path.nodeAt(selected.node);
-    if (node.handle(selected.handle) == null) return const {};
-
-    final handles = {selected};
-    final opposite = selected.opposite;
-    if (node.type.isSmooth && node.handle(opposite.handle) != null) {
-      handles.add(opposite);
+    if (path.nodeAt(selected.node).handle(selected.handle) == null) {
+      return const {};
     }
-    return handles;
+    return {selected};
   }
 
   /// Whether [ref] is a selected handle in [path].

@@ -17,6 +17,7 @@ A Flutter widget for visually editing vector paths, with a design-tool style pen
   preserving the shape or cutting the path.
 - **Linked and broken handles** — smooth points keep their handles aligned
   through the anchor; hold the break modifier to move a handle independently.
+  Click a handle to select it and delete it to collapse it onto its point.
 - **Corner ⇄ smooth conversion** at any time.
 - **Snapping** to other points, segment midpoints and alignment axes, with
   visual guides and a modifier to switch it off.
@@ -112,6 +113,11 @@ With the pen tool a click places a corner point, a click and drag pulls out a
 symmetric pair of handles, clicking a segment inserts a point on it without
 changing its shape, and clicking the first point of the path closes it.
 
+Clicking a handle of a selected point selects that handle alone. Deleting a
+selected handle collapses it onto its point, straightening that side of the
+curve; deleting the last handle of a point turns it back into a corner. Bend
+dragging the point grows a symmetric pair of handles again.
+
 By default the pen may start a second, disconnected subpath once the current
 one is finished. Editors that must produce a single continuous path can turn
 that off, after which clicking empty canvas does nothing and the cursor falls
@@ -204,7 +210,8 @@ existing point into a curvature drag, the way the bend tool works in design
 tools like Figma. The point stays exactly where it is while its handles are
 pulled out, so a corner point becomes a smooth one on the first drag and a
 point that is already smooth keeps being reshaped. Points with broken handles
-keep them broken.
+keep them broken. A point that is missing one of its two handles gets a
+symmetric pair back, which is how a removed handle is restored.
 
 `bendPoint` and `disableSnapping` share a default, which is deliberate: a bend
 should not snap. The consequence is that the default bindings give you no way
@@ -233,7 +240,7 @@ ordinary shortcut maps:
 
 | Shortcut | Action |
 |---|---|
-| `Delete` / `Backspace` | remove the selected points |
+| `Delete` / `Backspace` | remove the selected handle, or the selected points |
 | `Escape` | stop extending the current path |
 | `Enter` | close the current path |
 | `Ctrl`/`Cmd` + `A` | select every point |

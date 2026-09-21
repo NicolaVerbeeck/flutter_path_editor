@@ -390,6 +390,27 @@ void main() {
       expect(node.incoming, const Offset(-10, 0));
     });
 
+    test('restoring a removed handle grows a symmetric pair', () {
+      final path = EditablePath.fromSvg('M0 0C0 0 -10 0 10 0C30 0 0 0 20 0')
+          .clearHandle(const HandleRef(NodeRef(0, 1), NodeHandle.outgoing));
+      expect(path.nodeAt(const NodeRef(0, 1)).outgoing, isNull);
+
+      const ref = HandleRef(NodeRef(0, 1), NodeHandle.outgoing);
+      expect(
+        path.setHandle(ref, const Offset(20, 10)).nodeAt(const NodeRef(0, 1)),
+        isA<PathNode>()
+            .having((it) => it.incoming, 'incoming', const Offset(-10, 0)),
+        reason: 'without the flag the opposite handle is left alone',
+      );
+
+      final restored = path
+          .setHandle(ref, const Offset(20, 10), restoreOpposite: true)
+          .nodeAt(const NodeRef(0, 1));
+      expect(restored.type, PathNodeType.mirrored);
+      expect(restored.outgoing, const Offset(20, 10));
+      expect(restored.incoming, const Offset(0, -10));
+    });
+
     test('converts nodes between corner and smooth', () {
       final path = EditablePath.fromSvg('M0 0L10 0L20 0');
 
