@@ -1,3 +1,11 @@
+## 0.1.0-alpha.2
+
+### Added
+
+* Handle selection: clicking a handle selects just that handle, and deleting it
+  collapses it onto its point. Removing the last handle of a point turns it back
+  into a corner, and bend dragging the point grows a symmetric pair again.
+
 ## 0.1.0-alpha.1
 
 A rewrite of the editing model and the public API, adding a full pen tool. See
@@ -13,9 +21,6 @@ the migration table in the README for the 0.0.x equivalents.
   (`corner`), and nodes convert between those at any time.
 * Multiple selection, with shift-click toggling and dragging the whole
   selection.
-* Handle selection: clicking a handle selects just that handle, and deleting it
-  collapses it onto its point. Removing the last handle of a point turns it back
-  into a corner, and bend dragging the point grows a symmetric pair again.
 * Two ways to remove a point: `NodeRemoval.preserveShape` refits the surrounding
   curve so the shape survives, `NodeRemoval.cut` breaks the path. Cuts that
   would leave more than one open subpath are refused.
