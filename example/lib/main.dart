@@ -41,6 +41,7 @@ class _EditorPageState extends State<EditorPage> {
   bool _showStrokePanel = false;
 
   bool _snappingEnabled = true;
+  bool _allowMultipleSubpaths = false;
   bool _darkCanvas = false;
   bool _playfulTheme = false;
   PathEditorViewport _viewport = const PathEditorViewport(
@@ -135,10 +136,13 @@ class _EditorPageState extends State<EditorPage> {
             _Toolbar(
               controller: _controller,
               snappingEnabled: _snappingEnabled,
+              allowMultipleSubpaths: _allowMultipleSubpaths,
               darkCanvas: _darkCanvas,
               playfulTheme: _playfulTheme,
               onSnappingChanged: (value) =>
                   setState(() => _snappingEnabled = value),
+              onAllowMultipleSubpathsChanged: (value) =>
+                  setState(() => _allowMultipleSubpaths = value),
               onDarkCanvasChanged: (value) =>
                   setState(() => _darkCanvas = value),
               onPlayfulThemeChanged: (value) =>
@@ -199,11 +203,10 @@ class _EditorPageState extends State<EditorPage> {
               closePath: SystemMouseCursors.cell,
               addPoint: SystemMouseCursors.copy,
             ),
-            // This demo edits a single path, so the pen is not allowed to
-            // start a second, disconnected one.
-            behavior: const PathEditorBehavior(
-                allowMultipleSubpaths: false,
-                nodeRemoval: NodeRemoval.preserveHandles),
+            behavior: PathEditorBehavior(
+              allowMultipleSubpaths: _allowMultipleSubpaths,
+              nodeRemoval: NodeRemoval.preserveHandles,
+            ),
             onSegmentCreated: (_) {
               // The specification asks for the stroke panel to open as soon as
               // the pen draws its first segment.
@@ -236,9 +239,11 @@ class _EditorPageState extends State<EditorPage> {
 class _Toolbar extends StatelessWidget {
   final PathEditorController controller;
   final bool snappingEnabled;
+  final bool allowMultipleSubpaths;
   final bool darkCanvas;
   final bool playfulTheme;
   final ValueChanged<bool> onSnappingChanged;
+  final ValueChanged<bool> onAllowMultipleSubpathsChanged;
   final ValueChanged<bool> onDarkCanvasChanged;
   final ValueChanged<bool> onPlayfulThemeChanged;
   final ValueChanged<double> onZoom;
@@ -247,9 +252,11 @@ class _Toolbar extends StatelessWidget {
   const _Toolbar({
     required this.controller,
     required this.snappingEnabled,
+    required this.allowMultipleSubpaths,
     required this.darkCanvas,
     required this.playfulTheme,
     required this.onSnappingChanged,
+    required this.onAllowMultipleSubpathsChanged,
     required this.onDarkCanvasChanged,
     required this.onPlayfulThemeChanged,
     required this.onZoom,
@@ -295,6 +302,12 @@ class _Toolbar extends StatelessWidget {
                 label: const Text('Snap'),
                 selected: snappingEnabled,
                 onSelected: onSnappingChanged,
+              ),
+              const SizedBox(width: 8),
+              FilterChip(
+                label: const Text('Multiple subpaths'),
+                selected: allowMultipleSubpaths,
+                onSelected: onAllowMultipleSubpathsChanged,
               ),
               const SizedBox(width: 8),
               FilterChip(

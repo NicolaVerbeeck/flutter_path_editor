@@ -13,7 +13,8 @@ the editor is.
   button disables itself when the cut is not allowed.
 - A stroke settings panel that opens automatically through `onSegmentCreated`
   as the first segment appears, and drives the editor theme.
-- Toggling snapping, a dark canvas and a completely custom theme.
+- Toggling snapping, multiple subpaths, a dark canvas and a completely custom
+  theme.
 - Zooming with the mouse wheel or the toolbar; the path scales while the
   editing chrome keeps its size.
 - Undo and redo, and the live SVG output of the path.
