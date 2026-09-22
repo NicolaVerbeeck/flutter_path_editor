@@ -320,6 +320,10 @@ class PathEditorController extends ChangeNotifier {
 
   /// Removes [nodes] using [mode].
   ///
+  /// [NodeRemoval.preserveShape] refits the handles of the neighbouring nodes
+  /// so the shape survives, [NodeRemoval.preserveHandles] leaves them alone
+  /// and just reconnects the path, and [NodeRemoval.cut] breaks the path.
+  ///
   /// Returns `false` without changing anything when the removal is not allowed,
   /// which happens when a cut would leave the path with more than one open
   /// subpath.

@@ -389,6 +389,9 @@ class PathEditorToolHandler extends ChangeNotifier {
   /// of a node turns it into a corner. Otherwise the selected nodes are
   /// removed.
   ///
+  /// When [mode] is `null` the cut modifier selects [NodeRemoval.cut] and
+  /// [PathEditorBehavior.nodeRemoval] decides how a plain delete behaves.
+  ///
   /// Returns `false` when the removal is not allowed, which happens when a cut
   /// would leave the path with more than one open subpath.
   bool removeSelection({NodeRemoval? mode}) {
@@ -412,7 +415,7 @@ class PathEditorToolHandler extends ChangeNotifier {
     final resolved = mode ??
         (_modifiers.cutPath.isActive(_keyboard)
             ? NodeRemoval.cut
-            : NodeRemoval.preserveShape);
+            : _behavior.nodeRemoval);
 
     final removed = controller.transaction(
       () => controller.removeNodes(nodes, mode: resolved),
@@ -479,7 +482,7 @@ class PathEditorToolHandler extends ChangeNotifier {
 
       case NodeHit(node: final node)
           when _modifiers.removeNode.isActive(_keyboard):
-        if (controller.removeNodes([node])) {
+        if (controller.removeNodes([node], mode: _behavior.nodeRemoval)) {
           _activeSegment = null;
           _callbacks.onNodesRemoved?.call([node]);
         }

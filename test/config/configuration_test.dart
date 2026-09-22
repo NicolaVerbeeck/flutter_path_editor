@@ -36,6 +36,7 @@ void main() {
         allowMultipleSubpaths: false,
         nudgeDistance: 6,
         largeNudgeDistance: 7,
+        nodeRemoval: NodeRemoval.preserveHandles,
       );
 
       final copy = behavior.copyWith(
@@ -51,6 +52,7 @@ void main() {
         allowMultipleSubpaths: true,
         nudgeDistance: 16,
         largeNudgeDistance: 17,
+        nodeRemoval: NodeRemoval.cut,
       );
 
       expect(copy.nodeHitRadius, 11);
@@ -65,6 +67,7 @@ void main() {
       expect(copy.allowMultipleSubpaths, isTrue);
       expect(copy.nudgeDistance, 16);
       expect(copy.largeNudgeDistance, 17);
+      expect(copy.nodeRemoval, NodeRemoval.cut);
       expect(behavior.copyWith(), behavior);
       expect(behavior.hashCode, behavior.copyWith().hashCode);
       expect(behavior == Object(), isFalse);
