@@ -180,6 +180,107 @@ void main() {
     });
   });
 
+  group('removeNodes preserving handles', () {
+    test('keeps the handles of both neighbours', () {
+      final path =
+          EditablePath.fromSvg('M0 0C10 40 40 40 50 0C60 -40 90 -40 100 0');
+
+      final updated = path.removeNodes(
+        [const NodeRef(0, 1)],
+        mode: NodeRemoval.preserveHandles,
+      );
+
+      expect(updated.nodeCount, 2);
+      // The controls of the replacement segment are exactly the handles the
+      // two neighbours already had.
+      expect(
+          updated.nodeAt(const NodeRef(0, 0)).outgoing, const Offset(10, 40));
+      expect(
+        updated.nodeAt(const NodeRef(0, 1)).incoming,
+        const Offset(90, -40),
+      );
+      expect(updated.toSvg(), 'M0.0 0.0C10.0 40.0 90.0 -40.0 100.0 0.0');
+    });
+
+    test('does not refit, unlike preserveShape', () {
+      final path = EditablePath.fromSvg(
+        'M0 0C0 55 45 100 100 100C155 100 200 55 200 0',
+      );
+
+      final joined = path.removeNodes(
+        [const NodeRef(0, 1)],
+        mode: NodeRemoval.preserveHandles,
+      );
+      final refitted = path.removeNodes([const NodeRef(0, 1)]);
+
+      expect(joined.toSvg(), 'M0.0 0.0C0.0 55.0 200.0 55.0 200.0 0.0');
+      expect(
+        maxDeviation(path, refitted),
+        lessThan(maxDeviation(path, joined)),
+      );
+    });
+
+    test('removes an interior node of a polyline', () {
+      final path = EditablePath.fromSvg('M0 0L10 0L20 0');
+
+      final updated = path.removeNodes(
+        [const NodeRef(0, 1)],
+        mode: NodeRemoval.preserveHandles,
+      );
+
+      expect(updated.toSvg(), 'M0.0 0.0L20.0 0.0');
+    });
+
+    test('joins a curve to a line without growing a handle', () {
+      final path = EditablePath.fromSvg('M0 0C10 40 40 40 50 0L100 0');
+
+      final updated = path.removeNodes(
+        [const NodeRef(0, 1)],
+        mode: NodeRemoval.preserveHandles,
+      );
+
+      expect(
+          updated.nodeAt(const NodeRef(0, 0)).outgoing, const Offset(10, 40));
+      expect(updated.nodeAt(const NodeRef(0, 1)).incoming, isNull);
+    });
+
+    test('removing an endpoint clears the dangling handle', () {
+      final path = EditablePath.fromSvg('M0 0C10 0 20 0 30 0C40 0 50 0 60 0');
+
+      final updated = path.removeNodes(
+        [const NodeRef(0, 2)],
+        mode: NodeRemoval.preserveHandles,
+      );
+
+      expect(updated.nodeCount, 2);
+      expect(updated.nodeAt(const NodeRef(0, 1)).outgoing, isNull);
+    });
+
+    test('removing from a closed subpath keeps it closed', () {
+      final path = EditablePath.fromSvg('M0 0L10 0L10 10L0 10Z');
+
+      final updated = path.removeNodes(
+        [const NodeRef(0, 1)],
+        mode: NodeRemoval.preserveHandles,
+      );
+
+      expect(updated.subpaths.single.closed, isTrue);
+      expect(updated.toSvg(), 'M0.0 0.0L10.0 10.0L0.0 10.0Z');
+    });
+
+    test('is always allowed', () {
+      final path = EditablePath.fromSvg('M0 0L10 0L20 0');
+
+      expect(
+        path.canRemoveNodes(
+          [const NodeRef(0, 1)],
+          mode: NodeRemoval.preserveHandles,
+        ),
+        isTrue,
+      );
+    });
+  });
+
   group('removeNodes cutting', () {
     test('opens a closed subpath and rotates it around the cut', () {
       final path = EditablePath.fromSvg('M0 0L10 0L10 10L0 10Z');

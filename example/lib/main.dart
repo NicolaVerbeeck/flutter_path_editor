@@ -201,7 +201,9 @@ class _EditorPageState extends State<EditorPage> {
             ),
             // This demo edits a single path, so the pen is not allowed to
             // start a second, disconnected one.
-            behavior: const PathEditorBehavior(allowMultipleSubpaths: false),
+            behavior: const PathEditorBehavior(
+                allowMultipleSubpaths: false,
+                nodeRemoval: NodeRemoval.preserveHandles),
             onSegmentCreated: (_) {
               // The specification asks for the stroke panel to open as soon as
               // the pen draws its first segment.
@@ -486,9 +488,19 @@ class _NodeActions extends StatelessWidget {
         const SizedBox(width: 8),
         IconButton(
           icon: const Icon(Icons.delete_outline),
-          tooltip: 'Remove, keeping the shape',
+          tooltip: 'Remove, refitting the shape (Figma style)',
           onPressed: hasSelection
               ? () => controller.removeNodes(controller.selection.nodes)
+              : null,
+        ),
+        IconButton(
+          icon: const Icon(Icons.compress),
+          tooltip: 'Remove, keeping the handles (InDesign style)',
+          onPressed: hasSelection
+              ? () => controller.removeNodes(
+                    controller.selection.nodes,
+                    mode: NodeRemoval.preserveHandles,
+                  )
               : null,
         ),
         IconButton(

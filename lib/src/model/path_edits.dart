@@ -6,13 +6,26 @@ import 'package:path_editor/src/model/editable_path.dart';
 import 'package:path_editor/src/model/path_node.dart';
 import 'package:path_editor/src/model/path_segment.dart';
 
-/// The two intentions behind removing a node, as described by the pen tool
+/// The intentions behind removing a node, as described by the pen tool
 /// specification.
 enum NodeRemoval {
   /// "Clean up the curve": the node disappears but the path stays a single
   /// connected run. The surrounding segments are refitted so the shape is
   /// preserved as closely as possible.
+  ///
+  /// This is how Figma and Illustrator delete a point: the handles of the two
+  /// neighbours are rewritten so the single replacement segment follows the
+  /// two segments it stands in for.
   preserveShape,
+
+  /// "Join the neighbours": the node disappears and the path stays connected,
+  /// but the handles of the two neighbours are left exactly as they are.
+  ///
+  /// This is how InDesign deletes a point. The outgoing handle of the previous
+  /// node and the incoming handle of the next node become the two controls of
+  /// the replacement segment, so the shape usually changes, but the neighbours
+  /// keep the tangents the user gave them.
+  preserveHandles,
 
   /// "Cut here": the path is broken at the node.
   ///
@@ -196,16 +209,17 @@ extension PathEdits on EditablePath {
 
   /// Whether removing [nodes] with [mode] is allowed.
   ///
-  /// [NodeRemoval.preserveShape] is always allowed. [NodeRemoval.cut] is
-  /// rejected when it would leave the path with more than one open subpath,
-  /// implementing the "we do not have multiple open paths" rule.
+  /// [NodeRemoval.preserveShape] and [NodeRemoval.preserveHandles] are always
+  /// allowed. [NodeRemoval.cut] is rejected when it would leave the path with
+  /// more than one open subpath, implementing the "we do not have multiple
+  /// open paths" rule.
   bool canRemoveNodes(
     Iterable<NodeRef> nodes, {
     NodeRemoval mode = NodeRemoval.preserveShape,
   }) {
     final refs = nodes.where(contains).toList();
     if (refs.isEmpty) return false;
-    if (mode == NodeRemoval.preserveShape) return true;
+    if (mode != NodeRemoval.cut) return true;
 
     return removeNodes(refs, mode: mode).openSubpathIndices.length <= 1;
   }
@@ -236,7 +250,9 @@ extension PathEdits on EditablePath {
       final indices = grouped[subpath]!..sort((a, b) => b.compareTo(a));
       final replacement = switch (mode) {
         NodeRemoval.preserveShape =>
-          _removePreservingShape(result[subpath], indices),
+          _removeJoining(result[subpath], indices, refit: true),
+        NodeRemoval.preserveHandles =>
+          _removeJoining(result[subpath], indices, refit: false),
         NodeRemoval.cut => _cutAt(result[subpath], indices.toSet()),
       };
       result.replaceRange(subpath, subpath + 1, replacement);
@@ -246,25 +262,35 @@ extension PathEdits on EditablePath {
   }
 }
 
-/// Removes every index in [descendingIndices] from [subpath], refitting the
-/// surrounding geometry each time.
+/// Removes every index in [descendingIndices] from [subpath], joining the
+/// segments that surrounded each removed node.
+///
+/// When [refit] is `true` the handles of the two neighbours are rewritten so
+/// the replacement segment follows the original geometry; when it is `false`
+/// they are left untouched and simply become the controls of the replacement
+/// segment.
 ///
 /// Removing a node never splits a subpath, so working from the highest index
 /// down keeps the remaining indices valid.
-List<PathSubpath> _removePreservingShape(
+List<PathSubpath> _removeJoining(
   PathSubpath subpath,
-  List<int> descendingIndices,
-) {
+  List<int> descendingIndices, {
+  required bool refit,
+}) {
   var result = [subpath];
   for (final index in descendingIndices) {
     if (result.isEmpty) break;
-    result = _removeOnePreservingShape(result.single, index);
+    result = _removeOneJoining(result.single, index, refit: refit);
   }
   return result;
 }
 
-/// Removes the node at [index] and refits the surrounding geometry.
-List<PathSubpath> _removeOnePreservingShape(PathSubpath subpath, int index) {
+/// Removes the node at [index], joining the segments around it.
+List<PathSubpath> _removeOneJoining(
+  PathSubpath subpath,
+  int index, {
+  required bool refit,
+}) {
   final count = subpath.length;
   if (count <= 1) return const [];
 
@@ -280,7 +306,8 @@ List<PathSubpath> _removeOnePreservingShape(PathSubpath subpath, int index) {
 
   if (!hasPrevious || !hasNext) {
     // An endpoint of an open subpath simply disappears; the new endpoint loses
-    // the handle that pointed at the removed node.
+    // the handle that pointed at the removed node. There is no segment to
+    // rebuild here, so both modes agree.
     nodes.removeAt(index);
     if (!hasPrevious) {
       nodes[0] = _retyped(nodes.first.withHandle(NodeHandle.incoming, null));
@@ -291,36 +318,42 @@ List<PathSubpath> _removeOnePreservingShape(PathSubpath subpath, int index) {
     return [subpath.copyWith(nodes: nodes)];
   }
 
-  final previousIndex = (index - 1 + count) % count;
-  final nextIndex = (index + 1) % count;
-  final previous = nodes[previousIndex];
-  final removed = nodes[index];
-  final next = nodes[nextIndex];
+  if (refit) {
+    final previousIndex = (index - 1 + count) % count;
+    final nextIndex = (index + 1) % count;
+    final previous = nodes[previousIndex];
+    final removed = nodes[index];
+    final next = nodes[nextIndex];
 
-  final incomingSegment = PathSegment(
-    start: previous.position,
-    startControl: previous.outgoing,
-    endControl: removed.incoming,
-    end: removed.position,
-  );
-  final outgoingSegment = PathSegment(
-    start: removed.position,
-    startControl: removed.outgoing,
-    endControl: next.incoming,
-    end: next.position,
-  );
-
-  if (incomingSegment.isCurve || outgoingSegment.isCurve) {
-    final (control1, control2) = fitCubic(
-      sampleSegments([incomingSegment, outgoingSegment]),
-      (previous.outgoing ?? removed.position) - previous.position,
-      (next.incoming ?? removed.position) - next.position,
+    final incomingSegment = PathSegment(
+      start: previous.position,
+      startControl: previous.outgoing,
+      endControl: removed.incoming,
+      end: removed.position,
     );
-    nodes[previousIndex] =
-        _retyped(previous.withHandle(NodeHandle.outgoing, control1));
-    nodes[nextIndex] = _retyped(next.withHandle(NodeHandle.incoming, control2));
+    final outgoingSegment = PathSegment(
+      start: removed.position,
+      startControl: removed.outgoing,
+      endControl: next.incoming,
+      end: next.position,
+    );
+
+    if (incomingSegment.isCurve || outgoingSegment.isCurve) {
+      final (control1, control2) = fitCubic(
+        sampleSegments([incomingSegment, outgoingSegment]),
+        (previous.outgoing ?? removed.position) - previous.position,
+        (next.incoming ?? removed.position) - next.position,
+      );
+      nodes[previousIndex] =
+          _retyped(previous.withHandle(NodeHandle.outgoing, control1));
+      nodes[nextIndex] =
+          _retyped(next.withHandle(NodeHandle.incoming, control2));
+    }
+    // Two straight segments simply become one straight segment.
   }
-  // Two straight segments simply become one straight segment.
+  // Without a refit the neighbours keep their handles, so dropping the node is
+  // all that is needed: the surviving handles become the controls of the
+  // replacement segment.
 
   nodes.removeAt(index);
   return [subpath.copyWith(nodes: nodes)];

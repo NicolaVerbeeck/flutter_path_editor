@@ -945,6 +945,23 @@ void main() {
       expect(controller.svg, 'M0.0 0.0L100.0 0.0');
     });
 
+    test('follows the configured node removal mode', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0C10 40 40 40 50 0C60 -40 90 -40 100 0',
+      );
+      final handler = handlerFor(
+        controller,
+        behavior: const PathEditorBehavior(
+          nodeRemoval: NodeRemoval.preserveHandles,
+        ),
+      );
+
+      handler.click(const Offset(50, 0));
+      expect(handler.removeSelection(), isTrue);
+
+      expect(controller.svg, 'M0.0 0.0C10.0 40.0 90.0 -40.0 100.0 0.0');
+    });
+
     test('refuses a cut that would create a second open path', () {
       final controller = PathEditorController.fromSvg('M0 0L50 0L100 0');
       final handler = handlerFor(

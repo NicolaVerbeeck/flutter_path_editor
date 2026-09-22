@@ -321,12 +321,17 @@ the usual moment to open a stroke settings panel.
 
 ## Removing points
 
-Removing a point has two very different meanings, and both are supported:
+Removing a point has three very different meanings, and all of them are
+supported:
 
 ```dart
-// Simplify: the point disappears, the path stays connected and the surrounding
-// curve is refitted so the shape is preserved.
+// Simplify, Figma style: the point disappears, the path stays connected and
+// the handles of the two neighbours are refitted so the shape is preserved.
 controller.removeNodes(nodes);
+
+// Simplify, InDesign style: the point disappears and the path stays connected,
+// but the neighbours keep the handles they already had.
+controller.removeNodes(nodes, mode: NodeRemoval.preserveHandles);
 
 // Cut: the path is broken at the point.
 controller.removeNodes(nodes, mode: NodeRemoval.cut);
@@ -334,6 +339,20 @@ controller.removeNodes(nodes, mode: NodeRemoval.cut);
 
 A cut is refused, and `canRemoveNodes` returns `false`, when it would leave the
 path with more than one open subpath.
+
+Which of the two simplify modes the editor itself uses when the user presses
+delete is configured on the behavior:
+
+```dart
+PathEditor(
+  controller: controller,
+  behavior: const PathEditorBehavior(
+    nodeRemoval: NodeRemoval.preserveHandles,
+  ),
+);
+```
+
+Holding the cut modifier still overrides this with a cut.
 
 ## Migrating from 0.0.x
 

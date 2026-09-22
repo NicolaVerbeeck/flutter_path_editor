@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:path_editor/src/model/path_edits.dart';
 
 /// Tunable interaction parameters of the editor.
 ///
@@ -58,6 +59,18 @@ class PathEditorBehavior {
   /// How far a nudge moves the selection while the shift key is held.
   final double largeNudgeDistance;
 
+  /// How a point is removed when the cut modifier is not held.
+  ///
+  /// [NodeRemoval.preserveShape] refits the handles of the two neighbours so
+  /// the shape survives the deletion, which is what Figma and Illustrator do.
+  /// [NodeRemoval.preserveHandles] leaves those handles alone and simply
+  /// reconnects the path, which is what InDesign does.
+  ///
+  /// Setting this to [NodeRemoval.cut] makes deleting always break the path.
+  /// This only sets the default; the controller's `removeNodes` still accepts
+  /// an explicit mode.
+  final NodeRemoval nodeRemoval;
+
   /// Creates a behavior configuration.
   const PathEditorBehavior({
     this.nodeHitRadius = 9,
@@ -72,6 +85,7 @@ class PathEditorBehavior {
     this.allowMultipleSubpaths = true,
     this.nudgeDistance = 1,
     this.largeNudgeDistance = 10,
+    this.nodeRemoval = NodeRemoval.preserveShape,
   });
 
   /// The default behavior.
@@ -91,6 +105,7 @@ class PathEditorBehavior {
     bool? allowMultipleSubpaths,
     double? nudgeDistance,
     double? largeNudgeDistance,
+    NodeRemoval? nodeRemoval,
   }) =>
       PathEditorBehavior(
         nodeHitRadius: nodeHitRadius ?? this.nodeHitRadius,
@@ -109,6 +124,7 @@ class PathEditorBehavior {
             allowMultipleSubpaths ?? this.allowMultipleSubpaths,
         nudgeDistance: nudgeDistance ?? this.nudgeDistance,
         largeNudgeDistance: largeNudgeDistance ?? this.largeNudgeDistance,
+        nodeRemoval: nodeRemoval ?? this.nodeRemoval,
       );
 
   @override
@@ -127,7 +143,8 @@ class PathEditorBehavior {
           closeOnFirstNodeClick == other.closeOnFirstNodeClick &&
           allowMultipleSubpaths == other.allowMultipleSubpaths &&
           nudgeDistance == other.nudgeDistance &&
-          largeNudgeDistance == other.largeNudgeDistance);
+          largeNudgeDistance == other.largeNudgeDistance &&
+          nodeRemoval == other.nodeRemoval);
 
   @override
   int get hashCode => Object.hash(
@@ -143,5 +160,6 @@ class PathEditorBehavior {
         allowMultipleSubpaths,
         nudgeDistance,
         largeNudgeDistance,
+        nodeRemoval,
       );
 }

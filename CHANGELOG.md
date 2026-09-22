@@ -1,3 +1,13 @@
+## 0.1.0-alpha.3
+
+* `NodeRemoval.preserveHandles`, a third way to remove a point. Where
+  `NodeRemoval.preserveShape` refits the handles of the two neighbours so the
+  shape survives, the way Figma and Illustrator do it, the new mode leaves those
+  handles exactly as they are and simply reconnects the path, the way InDesign
+  does it.
+* `PathEditorBehavior.nodeRemoval`, which picks the mode the editor uses when
+  the user deletes a point without holding the cut modifier.
+
 ## 0.1.0-alpha.2
 
 ### Added
