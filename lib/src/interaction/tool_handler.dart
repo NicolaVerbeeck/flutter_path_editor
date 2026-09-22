@@ -223,11 +223,11 @@ class PathEditorToolHandler extends ChangeNotifier {
       HandleHit() => PathEditorCursorState.adjustHandle,
       // Bending grabs the curvature of the point rather than the point itself.
       NodeHit() ||
-      CloseTargetHit() when _modifiers.bendPoint.isActive(_keyboard) =>
+      CloseTargetHit() when _isModifierActive(_modifiers.bendPoint) =>
         PathEditorCursorState.adjustHandle,
       CloseTargetHit() => PathEditorCursorState.closePath,
       NodeHit(node: final node) =>
-        isPen && _modifiers.removeNode.isActive(_keyboard)
+        isPen && _isModifierActive(_modifiers.removeNode)
             ? PathEditorCursorState.removePoint
             : controller.selection.contains(node)
                 ? PathEditorCursorState.movePoint
@@ -329,7 +329,7 @@ class PathEditorToolHandler extends ChangeNotifier {
     final reduceTo = _reduceSelectionTo;
     if (reduceTo != null &&
         !_movedBeyondThreshold &&
-        !_modifiers.multiSelect.isActive(_keyboard)) {
+        !_isModifierActive(_modifiers.multiSelect)) {
       controller.selection = controller.selection.selectOnly(reduceTo);
     }
 
@@ -413,7 +413,7 @@ class PathEditorToolHandler extends ChangeNotifier {
     if (nodes.isEmpty) return false;
 
     final resolved = mode ??
-        (_modifiers.cutPath.isActive(_keyboard)
+        (_isModifierActive(_modifiers.cutPath)
             ? NodeRemoval.cut
             : _behavior.nodeRemoval);
 
@@ -452,7 +452,7 @@ class PathEditorToolHandler extends ChangeNotifier {
         _startHandleDrag(handle);
         return;
       case NodeHit(node: final node) || CloseTargetHit(node: final node)
-          when _modifiers.bendPoint.isActive(_keyboard):
+          when _isModifierActive(_modifiers.bendPoint):
         _startBend(node);
         return;
       default:
@@ -481,7 +481,7 @@ class PathEditorToolHandler extends ChangeNotifier {
         _callbacks.onSubpathClosed?.call(node.subpath);
 
       case NodeHit(node: final node)
-          when _modifiers.removeNode.isActive(_keyboard):
+          when _isModifierActive(_modifiers.removeNode):
         if (controller.removeNodes([node], mode: _behavior.nodeRemoval)) {
           _activeSegment = null;
           _callbacks.onNodesRemoved?.call([node]);
@@ -568,7 +568,7 @@ class PathEditorToolHandler extends ChangeNotifier {
   }) {
     final selection = controller.selection;
     if (!keepSelection) {
-      if (_modifiers.multiSelect.isActive(_keyboard)) {
+      if (_isModifierActive(_modifiers.multiSelect)) {
         controller.selection = selection.toggle(node);
       } else if (selection.contains(node)) {
         // Keep the multi selection so it can be dragged as a whole, and only
@@ -648,14 +648,14 @@ class PathEditorToolHandler extends ChangeNotifier {
       scene,
       exclude: {drag.node},
       anchor: drag.origin,
-      constrainAngle: _modifiers.constrainAngle.isActive(_keyboard),
+      constrainAngle: _isModifierActive(_modifiers.constrainAngle),
     );
     _guides = snapped.guides;
 
     controller.path = drag.startPath.setHandle(
       HandleRef(drag.node, NodeHandle.outgoing),
       snapped.position,
-      breakLink: _modifiers.breakHandle.isActive(_keyboard),
+      breakLink: _isModifierActive(_modifiers.breakHandle),
       restoreOpposite: drag.bend,
     );
   }
@@ -668,14 +668,14 @@ class PathEditorToolHandler extends ChangeNotifier {
       scene,
       exclude: {drag.handle.node},
       anchor: node.position,
-      constrainAngle: _modifiers.constrainAngle.isActive(_keyboard),
+      constrainAngle: _isModifierActive(_modifiers.constrainAngle),
     );
     _guides = snapped.guides;
 
     controller.path = drag.startPath.setHandle(
       drag.handle,
       snapped.position,
-      breakLink: _modifiers.breakHandle.isActive(_keyboard),
+      breakLink: _isModifierActive(_modifiers.breakHandle),
     );
   }
 
@@ -703,9 +703,12 @@ class PathEditorToolHandler extends ChangeNotifier {
       exclude: exclude,
       anchor: anchor,
       constrainAngle: constrainAngle,
-      enabled: !_modifiers.disableSnapping.isActive(_keyboard),
+      enabled: !_isModifierActive(_modifiers.disableSnapping),
     );
   }
+
+  bool _isModifierActive(KeyModifier? modifier) =>
+      modifier?.isActive(_keyboard) ?? false;
 
   PathHit _hitTest(Offset scene) {
     final selection = controller.selection;

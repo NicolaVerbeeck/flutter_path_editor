@@ -211,6 +211,25 @@ void main() {
       expect(removed, [const NodeRef(0, 1)]);
     });
 
+    test('a null remove modifier leaves node clicks enabled', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0L50 0L100 0',
+        tool: PathTool.pen,
+      );
+      final handler = handlerFor(
+        controller,
+        modifiers: const PathEditorModifiers(removeNode: null),
+      );
+
+      handler.handleHover(const Offset(50, 0));
+      expect(handler.cursorState, PathEditorCursorState.selectPoint);
+
+      handler.click(const Offset(50, 0));
+
+      expect(controller.svg, 'M0.0 0.0L50.0 0.0L100.0 0.0');
+      expect(controller.selection.active, const NodeRef(0, 1));
+    });
+
     test('a rubber band is offered while a path is being extended', () {
       final controller = PathEditorController.empty();
       final handler = handlerFor(controller);

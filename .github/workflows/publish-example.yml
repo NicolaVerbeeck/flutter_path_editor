@@ -26,8 +26,6 @@ jobs:
         working-directory: ./example
       - run: dart analyze 
         working-directory: ./example
-      - run: flutter create --platforms=web .
-        working-directory: ./example
       - run: flutter build web --wasm --base-href /flutter_path_editor/
         working-directory: ./example
       - name: Upload artifact

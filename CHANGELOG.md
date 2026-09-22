@@ -1,3 +1,10 @@
+## 1.0.0
+
+* Modifier mappings can be set to `null` to disable their corresponding
+  behaviours.
+* Version 1.0.0 release
+
+
 ## 0.1.0-alpha.3
 
 * `NodeRemoval.preserveHandles`, a third way to remove a point. Where

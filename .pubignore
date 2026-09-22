@@ -8,6 +8,7 @@ example/.idea
 example/build
 example/windows
 example/linux
+example/web
 example/macos
 example/*.iml
 example/README

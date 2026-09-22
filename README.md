@@ -223,8 +223,15 @@ const PathEditorModifiers(disableSnapping: KeyModifier.control);
 ```
 
 `KeyModifier.controlOrMeta` resolves to command on Apple platforms and control
-everywhere else. Use `KeyModifier.none` to disable a behaviour, or
-`KeyModifier.custom` for anything else:
+everywhere else. Set any modifier to `null` to disable that behaviour, or use
+`KeyModifier.none` for an always-inactive mapping. For example, this disables
+remove-on-click while keeping the other default mappings:
+
+```dart
+const PathEditorModifiers(removeNode: null);
+```
+
+Use `KeyModifier.custom` for anything else:
 
 ```dart
 KeyModifier.custom(
