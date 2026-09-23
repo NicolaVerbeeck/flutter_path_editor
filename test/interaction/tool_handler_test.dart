@@ -211,6 +211,24 @@ void main() {
       expect(removed, [const NodeRef(0, 1)]);
     });
 
+    test('the cut modifier turns a remove click into a cut', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0L100 0L100 100Z',
+        tool: PathTool.pen,
+      );
+      final handler = handlerFor(
+        controller,
+        modifiers: PathEditorModifiers(
+          removeNode: alwaysHeld,
+          cutPath: alwaysHeld,
+        ),
+      );
+
+      handler.click(const Offset(100, 0));
+
+      expect(controller.svg, 'M100.0 100.0L0.0 0.0');
+    });
+
     test('a null remove modifier leaves node clicks enabled', () {
       final controller = PathEditorController.fromSvg(
         'M0 0L50 0L100 0',
@@ -637,13 +655,83 @@ void main() {
       expect(node.incoming, const Offset(20, -30));
     });
 
-    test('a click without a drag leaves the point untouched', () {
+    test('a bend click creates a smooth point from the neighbouring angle', () {
+      final controller = PathEditorController.fromSvg('M0 0L40 0L40 80');
+      final handler = bender(controller);
+
+      handler.click(const Offset(45, 0));
+
+      final node = controller.path.nodeAt(const NodeRef(0, 1));
+      final outgoing = node.handleVector(NodeHandle.outgoing)!;
+      final incoming = node.handleVector(NodeHandle.incoming)!;
+      expect(node.position, const Offset(40, 0));
+      expect(node.type, PathNodeType.mirrored);
+      expect(outgoing.dx, closeTo(outgoing.dy, 1e-9));
+      expect(incoming.dx, closeTo(-outgoing.dx, 1e-9));
+      expect(incoming.dy, closeTo(-outgoing.dy, 1e-9));
+      expect(outgoing.distance, closeTo(20, 1e-9));
+      expect(outgoing.distance, greaterThan(8));
+      expect(controller.svg, contains('C'));
+      expect(controller.undo(), isTrue);
+      expect(controller.svg, 'M0.0 0.0L40.0 0.0L40.0 80.0');
+    });
+
+    test('a bend click leaves disconnected handles untouched', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0C0 0 -10 5 50 0C110 0 0 0 100 0',
+      );
+      final original = controller.path.nodeAt(const NodeRef(0, 1));
+      final handler = bender(controller);
+
+      handler.click(const Offset(50, 0));
+
+      expect(controller.path.nodeAt(const NodeRef(0, 1)), original);
+    });
+
+    test('a bend click leaves handles on a corner node untouched', () {
+      const node = PathNode(
+        position: Offset(50, 0),
+        incoming: Offset(40, 5),
+        outgoing: Offset(60, 5),
+      );
+      final path = EditablePath([
+        PathSubpath(
+          nodes: [
+            const PathNode.corner(Offset.zero),
+            node,
+            const PathNode.corner(Offset(100, 0)),
+          ],
+        ),
+      ]);
+      final controller = PathEditorController.fromPath(path);
+      final handler = bender(controller);
+
+      handler.click(const Offset(50, 0));
+
+      expect(controller.path.nodeAt(const NodeRef(0, 1)), node);
+    });
+
+    test('sub-threshold bend movement is treated as a click', () {
       final controller = PathEditorController.fromSvg('M0 0L50 0L100 0');
       final handler = bender(controller);
 
       handler.drag(const Offset(50, 0), const Offset(51, 0));
 
-      expect(controller.svg, 'M0.0 0.0L50.0 0.0L100.0 0.0');
+      final node = controller.path.nodeAt(const NodeRef(0, 1));
+      expect(node.type, PathNodeType.mirrored);
+      expect(node.outgoing, const Offset(75, 0));
+      expect(node.incoming, const Offset(25, 0));
+    });
+
+    test('dragging out and back does not trigger bend-click conversion', () {
+      final controller = PathEditorController.fromSvg('M0 0L50 0L100 0');
+      final handler = bender(controller);
+
+      handler.handlePointerDown(const Offset(50, 0));
+      handler.handlePointerMove(const Offset(80, 30));
+      handler.handlePointerMove(const Offset(50, 0));
+      handler.handlePointerUp(const Offset(50, 0));
+
       expect(controller.path.nodeAt(const NodeRef(0, 1)).type,
           PathNodeType.corner);
     });
@@ -983,17 +1071,23 @@ void main() {
 
     test('refuses a cut that would create a second open path', () {
       final controller = PathEditorController.fromSvg('M0 0L50 0L100 0');
-      final handler = handlerFor(
-        controller,
-        modifiers: PathEditorModifiers(cutPath: alwaysHeld),
-      );
+      final handler = handlerFor(controller);
 
       handler.click(const Offset(50, 0));
-      expect(handler.removeSelection(), isFalse);
+      expect(handler.removeSelection(mode: NodeRemoval.cut), isFalse);
       expect(controller.svg, 'M0.0 0.0L50.0 0.0L100.0 0.0');
     });
 
     test('cuts a closed path open', () {
+      final controller = PathEditorController.fromSvg('M0 0L100 0L100 100Z');
+      final handler = handlerFor(controller);
+
+      handler.click(const Offset(100, 0));
+      expect(handler.removeSelection(mode: NodeRemoval.cut), isTrue);
+      expect(controller.svg, 'M100.0 100.0L0.0 0.0');
+    });
+
+    test('ignores the cut modifier, which only applies to clicks', () {
       final controller = PathEditorController.fromSvg('M0 0L100 0L100 100Z');
       final handler = handlerFor(
         controller,
@@ -1002,7 +1096,8 @@ void main() {
 
       handler.click(const Offset(100, 0));
       expect(handler.removeSelection(), isTrue);
-      expect(controller.svg, 'M100.0 100.0L0.0 0.0');
+      expect(controller.path.subpaths.single.closed, isTrue);
+      expect(controller.svg, 'M0.0 0.0L100.0 100.0Z');
     });
 
     test('deleting a selected handle only removes that handle', () {

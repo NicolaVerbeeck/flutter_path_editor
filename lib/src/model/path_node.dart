@@ -209,10 +209,10 @@ class PathNode {
   /// Converts this node to [target].
   ///
   /// Converting to [PathNodeType.corner] collapses both handles. Converting a
-  /// corner node to a smooth type creates handles pointing along the tangent
-  /// implied by the [previous] and [next] anchor positions, scaled by
-  /// [smoothFactor]. Converting between smooth types adjusts the existing
-  /// handles to satisfy the new invariant.
+  /// corner node to a smooth type creates handles pointing along the bisector
+  /// of the adjacent segment directions (or the available direction at an
+  /// endpoint), scaled by [smoothFactor]. Converting between smooth types
+  /// adjusts the existing handles to satisfy the new invariant.
   PathNode convertedTo(
     PathNodeType target, {
     Offset? previous,
@@ -303,7 +303,7 @@ class PathNode {
 
   Offset? _tangentDirection(Offset? previous, Offset? next) {
     if (previous != null && next != null) {
-      return _normalize(next - previous);
+      return _averageDirection(position - previous, next - position);
     }
     if (next != null) return _normalize(next - position);
     if (previous != null) return _normalize(position - previous);

@@ -283,6 +283,19 @@ void main() {
       expect(smooth.outgoing!.dy, closeTo(0, 1e-9));
     });
 
+    test('corner to smooth bisects unequal neighbouring directions', () {
+      const node = PathNode.corner(Offset(40, 0));
+
+      final smooth = node.convertedTo(
+        PathNodeType.mirrored,
+        previous: Offset.zero,
+        next: const Offset(40, 80),
+      );
+      final outgoing = smooth.handleVector(NodeHandle.outgoing)!;
+
+      expect(outgoing.dx, closeTo(outgoing.dy, 1e-9));
+    });
+
     test('corner without neighbours stays a corner', () {
       const node = PathNode.corner(Offset(10, 0));
       expect(

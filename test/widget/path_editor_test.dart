@@ -300,6 +300,142 @@ void main() {
       expect(controller.svg, 'M20.0 20.0L120.0 20.0');
     });
 
+    testWidgets('shift + delete and shift + backspace cut the path',
+        (tester) async {
+      for (final key in [
+        LogicalKeyboardKey.delete,
+        LogicalKeyboardKey.backspace,
+      ]) {
+        final controller =
+            PathEditorController.fromSvg('M20 20L120 20L120 120Z');
+
+        await tester.pumpWidget(
+          wrap(PathEditor(controller: controller, autofocus: true)),
+        );
+        await tester.pump();
+
+        final origin = tester.getTopLeft(find.byType(PathEditor));
+        await tester.tapAt(origin + const Offset(120, 20));
+        await tester.pump();
+
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.sendKeyEvent(key);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pump();
+
+        expect(controller.svg, 'M120.0 120.0L20.0 20.0', reason: '$key');
+      }
+    });
+
+    testWidgets('unmapped modifiers fall back to the best matching shortcut',
+        (tester) async {
+      Future<void> press(
+        List<LogicalKeyboardKey> modifiers,
+        LogicalKeyboardKey key,
+      ) async {
+        for (final modifier in modifiers) {
+          await tester.sendKeyDownEvent(modifier);
+        }
+        await tester.sendKeyEvent(key);
+        for (final modifier in modifiers.reversed) {
+          await tester.sendKeyUpEvent(modifier);
+        }
+        await tester.pump();
+      }
+
+      final controller =
+          PathEditorController.fromSvg('M20 20L70 20L120 20L120 120Z');
+      await tester.pumpWidget(
+        wrap(PathEditor(controller: controller, autofocus: true)),
+      );
+      await tester.pump();
+      final origin = tester.getTopLeft(find.byType(PathEditor));
+
+      // Alt + Delete heals like a plain Delete.
+      await tester.tapAt(origin + const Offset(70, 20));
+      await tester.pump();
+      await press([LogicalKeyboardKey.altLeft], LogicalKeyboardKey.delete);
+      expect(controller.svg, 'M20.0 20.0L120.0 20.0L120.0 120.0Z');
+
+      // Alt + Shift + Backspace prefers Shift + Backspace, which cuts.
+      await tester.tapAt(origin + const Offset(120, 20));
+      await tester.pump();
+      await press(
+        [LogicalKeyboardKey.altLeft, LogicalKeyboardKey.shiftLeft],
+        LogicalKeyboardKey.backspace,
+      );
+      expect(controller.svg, 'M120.0 120.0L20.0 20.0');
+
+      // Letter shortcuts must match exactly.
+      await press([LogicalKeyboardKey.controlLeft], LogicalKeyboardKey.keyP);
+      expect(controller.tool, PathTool.select);
+      await press(
+        [LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.altLeft],
+        LogicalKeyboardKey.keyZ,
+      );
+      expect(controller.svg, 'M120.0 120.0L20.0 20.0',
+          reason: 'Ctrl + Alt + Z does not fall back to undo');
+      await press([], LogicalKeyboardKey.keyZ);
+      expect(controller.svg, 'M120.0 120.0L20.0 20.0');
+
+      // Exact matches still work: Ctrl + Z undoes, Ctrl + Shift + Z redoes.
+      await press([LogicalKeyboardKey.controlLeft], LogicalKeyboardKey.keyZ);
+      expect(controller.svg, 'M20.0 20.0L120.0 20.0L120.0 120.0Z');
+      await press(
+        [LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.shiftLeft],
+        LogicalKeyboardKey.keyZ,
+      );
+      expect(controller.svg, 'M120.0 120.0L20.0 20.0');
+    });
+
+    testWidgets('escape and enter fall back when modifiers are held',
+        (tester) async {
+      final controller = PathEditorController.empty();
+      await tester.pumpWidget(
+        wrap(PathEditor(controller: controller, autofocus: true)),
+      );
+      await tester.pump();
+      final origin = tester.getTopLeft(find.byType(PathEditor));
+
+      await tester.tapAt(origin + const Offset(20, 20));
+      await tester.pump();
+      expect(controller.selection.pendingSubpath, 0);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.altLeft);
+      await tester.pump();
+      expect(controller.selection.pendingSubpath, isNull);
+
+      final closing = PathEditorController.empty();
+      await tester.pumpWidget(
+        wrap(PathEditor(controller: closing, autofocus: true)),
+      );
+      await tester.pump();
+      for (final offset in const [
+        Offset(20, 20),
+        Offset(120, 20),
+        Offset(120, 120),
+      ]) {
+        await tester.tapAt(origin + offset);
+        await tester.pump();
+      }
+
+      for (final key in [
+        LogicalKeyboardKey.enter,
+        LogicalKeyboardKey.numpadEnter,
+      ]) {
+        expect(closing.path.subpaths.single.closed, isFalse);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.sendKeyEvent(key);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+        await tester.pump();
+        expect(closing.path.subpaths.single.closed, isTrue, reason: '$key');
+        closing.undo();
+        closing.selection = closing.selection.copyWith(pendingSubpath: 0);
+      }
+    });
+
     testWidgets('arrow keys nudge the selection', (tester) async {
       final controller = PathEditorController.fromSvg('M20 20L120 20');
 
