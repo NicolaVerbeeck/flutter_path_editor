@@ -101,7 +101,8 @@ class PathEditorModifiers {
 
   /// Turns a drag on an existing point into a curvature drag: the point stays
   /// put while its handles are pulled out, converting a corner point into a
-  /// smooth one.
+  /// smooth one. Clicking a corner with this modifier also makes it smooth,
+  /// with handles inferred from the directions of its neighbouring segments.
   ///
   /// This mirrors the bend tool of design tools like Figma, which is reached
   /// by holding the same key. Note that it shares its default with
@@ -120,7 +121,12 @@ class PathEditorModifiers {
   /// tool is active.
   final KeyModifier? removeNode;
 
-  /// Makes a delete action cut the path instead of preserving its shape.
+  /// Makes a [removeNode] click cut the path instead of removing the point
+  /// according to the configured node removal mode.
+  ///
+  /// This only affects clicks. Keyboard deletion does not look at held
+  /// modifiers; cutting from the keyboard has its own shortcut (`Shift` +
+  /// `Delete` / `Backspace` by default, see `PathEditorShortcuts`).
   final KeyModifier? cutPath;
 
   /// Creates a modifier mapping.
@@ -131,7 +137,7 @@ class PathEditorModifiers {
     this.disableSnapping = KeyModifier.controlOrMeta,
     this.constrainAngle = KeyModifier.shift,
     this.removeNode = KeyModifier.alt,
-    this.cutPath = KeyModifier.alt,
+    this.cutPath = KeyModifier.shift,
   });
 
   /// The default mapping.

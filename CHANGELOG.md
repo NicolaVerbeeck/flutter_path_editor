@@ -1,3 +1,17 @@
+## 1.1.0
+
+* `Shift` + `Delete` / `Backspace` cut the path at the selected points.
+* `Delete`, `Backspace`, `Escape`, `Enter` and numpad `Enter` fall back to the
+  best matching shortcut when unmapped modifiers are held, so for example
+  `Alt` + `Delete` now removes the selection like `Delete` instead of doing
+  nothing. See `PathEditorShortcuts.withFallbacks`.
+* **Breaking:** the `cutPath` modifier now only applies to remove-clicks with
+  the pen tool, and defaults to `Shift` (`Alt` + `Shift` + click cuts). Keyboard
+  deletion no longer looks at held modifiers; `DeleteNodesIntent()` without a
+  mode always uses `PathEditorBehavior.nodeRemoval`.
+* Clicking a corner point while holding `bendPoint` turns it into a smooth
+  point, with handles following the angle of the neighbouring segments.
+
 ## 1.0.0
 
 * Modifier mappings can be set to `null` to disable their corresponding

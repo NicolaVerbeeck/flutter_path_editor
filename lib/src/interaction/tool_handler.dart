@@ -50,7 +50,7 @@ class _PenHandle extends _Drag {
   final Offset origin;
 
   /// Whether this drag is bending an existing node rather than shaping a node
-  /// the pen has just placed. Only the cursor differs.
+  /// the pen has just placed.
   final bool bend;
 
   const _PenHandle(super.startPath, this.node, this.origin,
@@ -85,6 +85,7 @@ class PathEditorToolHandler extends ChangeNotifier {
   NodeRef? _reduceSelectionTo;
   int? _activePointer;
   bool _movedBeyondThreshold = false;
+  bool _bendDragged = false;
 
   /// Creates a tool handler.
   PathEditorToolHandler({
@@ -271,6 +272,7 @@ class PathEditorToolHandler extends ChangeNotifier {
     _pressScene = scene;
     _activePointer = pointer;
     _movedBeyondThreshold = false;
+    _bendDragged = false;
     _reduceSelectionTo = null;
 
     final hit = _hitTest(scene);
@@ -321,7 +323,14 @@ class PathEditorToolHandler extends ChangeNotifier {
   void handlePointerUp(Offset localPosition, {int pointer = 0}) {
     if (_activePointer != pointer) return;
     final scene = _viewport.toScene(localPosition);
+    final previousPointer = _pointer;
     _pointer = scene;
+
+    final drag = _drag;
+    if (drag is _PenHandle && drag.bend) {
+      if (scene != previousPointer) _updatePenHandle(drag, scene);
+      if (!_bendDragged) _finishBendClick(drag.node);
+    }
 
     // Clicking a node that was already part of a multi selection reduces the
     // selection to that node, but only once it is clear it was a click and not
@@ -389,8 +398,9 @@ class PathEditorToolHandler extends ChangeNotifier {
   /// of a node turns it into a corner. Otherwise the selected nodes are
   /// removed.
   ///
-  /// When [mode] is `null` the cut modifier selects [NodeRemoval.cut] and
-  /// [PathEditorBehavior.nodeRemoval] decides how a plain delete behaves.
+  /// When [mode] is `null`, [PathEditorBehavior.nodeRemoval] decides how the
+  /// nodes are removed. Held modifier keys are not consulted; keyboard
+  /// shortcuts that cut pass [NodeRemoval.cut] explicitly.
   ///
   /// Returns `false` when the removal is not allowed, which happens when a cut
   /// would leave the path with more than one open subpath.
@@ -412,13 +422,8 @@ class PathEditorToolHandler extends ChangeNotifier {
     final nodes = controller.selection.nodes.toList();
     if (nodes.isEmpty) return false;
 
-    final resolved = mode ??
-        (_isModifierActive(_modifiers.cutPath)
-            ? NodeRemoval.cut
-            : _behavior.nodeRemoval);
-
     final removed = controller.transaction(
-      () => controller.removeNodes(nodes, mode: resolved),
+      () => controller.removeNodes(nodes, mode: mode ?? _behavior.nodeRemoval),
     );
     if (removed) {
       _activeSegment = null;
@@ -482,7 +487,10 @@ class PathEditorToolHandler extends ChangeNotifier {
 
       case NodeHit(node: final node)
           when _isModifierActive(_modifiers.removeNode):
-        if (controller.removeNodes([node], mode: _behavior.nodeRemoval)) {
+        final mode = _isModifierActive(_modifiers.cutPath)
+            ? NodeRemoval.cut
+            : _behavior.nodeRemoval;
+        if (controller.removeNodes([node], mode: mode)) {
           _activeSegment = null;
           _callbacks.onNodesRemoved?.call([node]);
         }
@@ -542,6 +550,7 @@ class PathEditorToolHandler extends ChangeNotifier {
     _drag = null;
     _pressScene = null;
     _reduceSelectionTo = null;
+    _bendDragged = false;
     _guides = const [];
   }
 
@@ -558,6 +567,37 @@ class PathEditorToolHandler extends ChangeNotifier {
       controller.path.nodeAt(node).position,
       bend: true,
     );
+  }
+
+  void _finishBendClick(NodeRef ref) {
+    final path = controller.path;
+    if (!path.contains(ref)) return;
+
+    final node = path.nodeAt(ref);
+    if (node.type.isSmooth) return;
+
+    controller.path = path.convertNodes(
+      [ref],
+      PathNodeType.mirrored,
+      smoothFactor: _bendClickSmoothFactor(path, ref),
+    );
+  }
+
+  double _bendClickSmoothFactor(EditablePath path, NodeRef ref) {
+    const handleFactor = 1 / 2;
+    final (previous, next) = path.neighboursOf(ref);
+    if (previous == null || next == null) return handleFactor;
+
+    final position = path.nodeAt(ref).position;
+    final incomingLength = (position - previous).distance;
+    final outgoingLength = (next - position).distance;
+    if (incomingLength == 0 || outgoingLength == 0) return handleFactor;
+
+    // Size the mirrored pair to half of the shorter non-zero neighbouring span.
+    final shorterLength =
+        incomingLength < outgoingLength ? incomingLength : outgoingLength;
+    final averageLength = (incomingLength + outgoingLength) / 2;
+    return handleFactor * shorterLength / averageLength;
   }
 
   void _startMovingNode(
@@ -637,13 +677,15 @@ class PathEditorToolHandler extends ChangeNotifier {
   void _updatePenHandle(_PenHandle drag, Offset scene) {
     final threshold =
         _viewport.toSceneDistance(_behavior.smoothPointDragThreshold);
-    if ((scene - drag.origin).distance <= threshold) {
-      // Still a click: keep the node a corner.
+    final dragStart = drag.bend ? (_pressScene ?? drag.origin) : drag.origin;
+    if ((scene - dragStart).distance <= threshold) {
+      // Still within the handle-drag threshold; leave the source geometry.
       if (controller.path != drag.startPath) controller.path = drag.startPath;
       _guides = const [];
       return;
     }
 
+    if (drag.bend) _bendDragged = true;
     final snapped = _snap(
       scene,
       exclude: {drag.node},

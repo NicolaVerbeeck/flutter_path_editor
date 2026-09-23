@@ -60,7 +60,9 @@ class PathEditor extends StatefulWidget {
 
   /// The keyboard shortcuts of the editor.
   ///
-  /// Defaults to [PathEditorShortcuts.defaults].
+  /// Defaults to [PathEditorShortcuts.defaults]. Combinations of
+  /// [PathEditorShortcuts.fallbackKeys] that are not mapped exactly fall back
+  /// to the best match, see [PathEditorShortcuts.withFallbacks].
   final Map<ShortcutActivator, Intent>? shortcuts;
 
   /// The focus node of the editor. One is created when this is `null`.
@@ -128,6 +130,21 @@ class _PathEditorState extends State<PathEditor> {
   final ValueNotifier<int> _modifierRevision = ValueNotifier(0);
 
   FocusNode? _internalFocusNode;
+
+  Map<ShortcutActivator, Intent>? _shortcutSource;
+  Map<ShortcutActivator, Intent> _resolvedShortcuts = const {};
+
+  /// The configured shortcuts with best-match fallbacks, rebuilt only when the
+  /// configured map changes so the shortcut manager is not re-indexed on every
+  /// repaint.
+  Map<ShortcutActivator, Intent> get _shortcuts {
+    final source = widget.shortcuts ?? PathEditorShortcuts.defaults;
+    if (!identical(source, _shortcutSource)) {
+      _shortcutSource = source;
+      _resolvedShortcuts = PathEditorShortcuts.withFallbacks(source);
+    }
+    return _resolvedShortcuts;
+  }
 
   FocusNode get _focusNode =>
       widget.focusNode ??
@@ -238,7 +255,7 @@ class _PathEditorState extends State<PathEditor> {
         focusNode: _focusNode,
         autofocus: widget.autofocus,
         mouseCursor: widget.cursors.resolve(_handler.cursorState),
-        shortcuts: widget.shortcuts ?? PathEditorShortcuts.defaults,
+        shortcuts: _shortcuts,
         actions: buildPathEditorActions(
           controller: widget.controller,
           handler: _handler,

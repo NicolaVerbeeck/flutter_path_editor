@@ -198,7 +198,7 @@ PathEditor(
     disableSnapping: KeyModifier.controlOrMeta,
     constrainAngle: KeyModifier.shift,
     removeNode: KeyModifier.alt,
-    cutPath: KeyModifier.alt,
+    cutPath: KeyModifier.shift,
   ),
 );
 ```
@@ -209,9 +209,12 @@ Holding `bendPoint` (command on macOS, control elsewhere) turns a drag on an
 existing point into a curvature drag, the way the bend tool works in design
 tools like Figma. The point stays exactly where it is while its handles are
 pulled out, so a corner point becomes a smooth one on the first drag and a
-point that is already smooth keeps being reshaped. Points with broken handles
-keep them broken. A point that is missing one of its two handles gets a
-symmetric pair back, which is how a removed handle is restored.
+point that is already smooth keeps being reshaped. Clicking a corner instead
+creates a smooth point with handles bisecting the adjacent segment directions;
+for a corner with two neighbours, each handle is half the length of the shorter
+adjacent segment. Points with broken handles keep them broken while dragging. A
+point that is missing one of its two handles gets a symmetric pair back, which
+is how a removed handle is restored.
 
 `bendPoint` and `disableSnapping` share a default, which is deliberate: a bend
 should not snap. The consequence is that the default bindings give you no way
@@ -248,6 +251,7 @@ ordinary shortcut maps:
 | Shortcut | Action |
 |---|---|
 | `Delete` / `Backspace` | remove the selected handle, or the selected points |
+| `Shift` + `Delete` / `Backspace` | cut the path at the selected points |
 | `Escape` | stop extending the current path |
 | `Enter` | close the current path |
 | `Ctrl`/`Cmd` + `A` | select every point |
@@ -256,6 +260,14 @@ ordinary shortcut maps:
 | arrow keys | nudge the selection |
 | `Shift` + arrow keys | nudge the selection further |
 | `V` / `P` | select and pen tool |
+
+`Delete`, `Backspace`, `Escape`, `Enter` and numpad `Enter` also fire when
+extra modifiers are held: an unmapped combination falls back to the entry for
+the same key whose modifiers are the largest subset of the held ones. So
+`Alt` + `Delete` removes like `Delete` and `Alt` + `Shift` + `Delete` cuts like
+`Shift` + `Delete`. Exact entries always win, and every other shortcut, such as
+`Ctrl`/`Cmd` + `Z` or `V`, must match exactly. The fallback applies to custom
+maps too; the keys are listed in `PathEditorShortcuts.fallbackKeys`.
 
 Pass your own map to replace them:
 
@@ -359,7 +371,10 @@ PathEditor(
 );
 ```
 
-Holding the cut modifier still overrides this with a cut.
+Cutting from the keyboard has its own shortcut, `Shift` + `Delete` /
+`Backspace`, which always uses `NodeRemoval.cut`. With the pen tool, holding the
+`cutPath` modifier (`Shift` by default) while remove-clicking a point
+(`Alt` + `Shift` + click) cuts the path there instead.
 
 ## Migrating from 0.0.x
 
