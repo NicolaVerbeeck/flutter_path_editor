@@ -574,7 +574,7 @@ class PathEditorToolHandler extends ChangeNotifier {
     if (!path.contains(ref)) return;
 
     final node = path.nodeAt(ref);
-    if (node.type.isSmooth) return;
+    if (node.type != PathNodeType.corner || node.hasHandles) return;
 
     controller.path = path.convertNodes(
       [ref],

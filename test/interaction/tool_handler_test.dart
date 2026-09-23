@@ -676,6 +676,41 @@ void main() {
       expect(controller.svg, 'M0.0 0.0L40.0 0.0L40.0 80.0');
     });
 
+    test('a bend click leaves disconnected handles untouched', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0C0 0 -10 5 50 0C110 0 0 0 100 0',
+      );
+      final original = controller.path.nodeAt(const NodeRef(0, 1));
+      final handler = bender(controller);
+
+      handler.click(const Offset(50, 0));
+
+      expect(controller.path.nodeAt(const NodeRef(0, 1)), original);
+    });
+
+    test('a bend click leaves handles on a corner node untouched', () {
+      const node = PathNode(
+        position: Offset(50, 0),
+        incoming: Offset(40, 5),
+        outgoing: Offset(60, 5),
+      );
+      final path = EditablePath([
+        PathSubpath(
+          nodes: [
+            const PathNode.corner(Offset.zero),
+            node,
+            const PathNode.corner(Offset(100, 0)),
+          ],
+        ),
+      ]);
+      final controller = PathEditorController.fromPath(path);
+      final handler = bender(controller);
+
+      handler.click(const Offset(50, 0));
+
+      expect(controller.path.nodeAt(const NodeRef(0, 1)), node);
+    });
+
     test('sub-threshold bend movement is treated as a click', () {
       final controller = PathEditorController.fromSvg('M0 0L50 0L100 0');
       final handler = bender(controller);
