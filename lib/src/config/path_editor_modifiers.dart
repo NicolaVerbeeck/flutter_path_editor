@@ -18,6 +18,8 @@ class KeyModifier {
   /// Never active.
   static const KeyModifier none = KeyModifier._('none', _never);
 
+  static const KeyModifier _unset = KeyModifier._('unset', _never);
+
   /// Active while any shift key is held.
   static const KeyModifier shift = KeyModifier._('shift', _shift);
 
@@ -85,16 +87,17 @@ class KeyModifier {
 
 /// Which modifier key triggers which editing behaviour.
 ///
-/// Every entry can be remapped, including to [KeyModifier.none] to disable the
-/// behaviour entirely.
+/// Every entry can be remapped. Set an entry to `null` to disable that
+/// behaviour entirely, or use [KeyModifier.none] for an always-inactive
+/// modifier.
 @immutable
 class PathEditorModifiers {
   /// Adds the clicked node to the selection instead of replacing it.
-  final KeyModifier multiSelect;
+  final KeyModifier? multiSelect;
 
   /// Breaks the link between the two handles of a node while dragging one, so
   /// the opposite handle keeps its direction and length.
-  final KeyModifier breakHandle;
+  final KeyModifier? breakHandle;
 
   /// Turns a drag on an existing point into a curvature drag: the point stays
   /// put while its handles are pulled out, converting a corner point into a
@@ -105,20 +108,20 @@ class PathEditorModifiers {
   /// [disableSnapping]; when a drag starts on a point the bend wins, and the
   /// bend itself is unsnapped, which is usually what you want. Remap either
   /// one if you need them separated.
-  final KeyModifier bendPoint;
+  final KeyModifier? bendPoint;
 
   /// Temporarily turns snapping off.
-  final KeyModifier disableSnapping;
+  final KeyModifier? disableSnapping;
 
   /// Constrains handle and node movement to fixed angle increments.
-  final KeyModifier constrainAngle;
+  final KeyModifier? constrainAngle;
 
   /// Turns a click on a node into a "remove this node" action while the pen
   /// tool is active.
-  final KeyModifier removeNode;
+  final KeyModifier? removeNode;
 
   /// Makes a delete action cut the path instead of preserving its shape.
-  final KeyModifier cutPath;
+  final KeyModifier? cutPath;
 
   /// Creates a modifier mapping.
   const PathEditorModifiers({
@@ -135,24 +138,33 @@ class PathEditorModifiers {
   static const PathEditorModifiers defaults = PathEditorModifiers();
 
   /// Returns a copy of this mapping with the given modifiers replaced.
+  ///
+  /// Passing `null` disables the corresponding behaviour. Omitting an
+  /// argument keeps the existing mapping.
   PathEditorModifiers copyWith({
-    KeyModifier? multiSelect,
-    KeyModifier? breakHandle,
-    KeyModifier? bendPoint,
-    KeyModifier? disableSnapping,
-    KeyModifier? constrainAngle,
-    KeyModifier? removeNode,
-    KeyModifier? cutPath,
+    KeyModifier? multiSelect = KeyModifier._unset,
+    KeyModifier? breakHandle = KeyModifier._unset,
+    KeyModifier? bendPoint = KeyModifier._unset,
+    KeyModifier? disableSnapping = KeyModifier._unset,
+    KeyModifier? constrainAngle = KeyModifier._unset,
+    KeyModifier? removeNode = KeyModifier._unset,
+    KeyModifier? cutPath = KeyModifier._unset,
   }) =>
       PathEditorModifiers(
-        multiSelect: multiSelect ?? this.multiSelect,
-        breakHandle: breakHandle ?? this.breakHandle,
-        bendPoint: bendPoint ?? this.bendPoint,
-        disableSnapping: disableSnapping ?? this.disableSnapping,
-        constrainAngle: constrainAngle ?? this.constrainAngle,
-        removeNode: removeNode ?? this.removeNode,
-        cutPath: cutPath ?? this.cutPath,
+        multiSelect: _copyModifier(multiSelect, this.multiSelect),
+        breakHandle: _copyModifier(breakHandle, this.breakHandle),
+        bendPoint: _copyModifier(bendPoint, this.bendPoint),
+        disableSnapping: _copyModifier(disableSnapping, this.disableSnapping),
+        constrainAngle: _copyModifier(constrainAngle, this.constrainAngle),
+        removeNode: _copyModifier(removeNode, this.removeNode),
+        cutPath: _copyModifier(cutPath, this.cutPath),
       );
+
+  static KeyModifier? _copyModifier(
+    KeyModifier? value,
+    KeyModifier? current,
+  ) =>
+      identical(value, KeyModifier._unset) ? current : value;
 
   @override
   bool operator ==(Object other) =>

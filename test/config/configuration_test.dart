@@ -213,6 +213,7 @@ void main() {
       expect(copy.cutPath, KeyModifier.shift);
       expect(modifiers.copyWith(), modifiers);
       expect(modifiers.hashCode, modifiers.copyWith().hashCode);
+      expect(modifiers.copyWith(removeNode: null).removeNode, isNull);
       expect(modifiers == Object(), isFalse);
       expect(PathEditorModifiers.defaults, const PathEditorModifiers());
     });
