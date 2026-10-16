@@ -164,6 +164,28 @@ void main() {
       expect(controller.selection.active, const NodeRef(0, 1));
     });
 
+    test('dragging an inserted node drops the add point indicator', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0L100 0',
+        tool: PathTool.pen,
+      );
+      final handler = handlerFor(controller);
+
+      handler.handleHover(const Offset(50, 2));
+      expect(handler.insertIndicator, const Offset(50, 0));
+
+      handler.handlePointerDown(const Offset(50, 2));
+      handler.handlePointerMove(const Offset(50, 40));
+
+      expect(controller.svg, 'M0.0 0.0L50.0 38.0L100.0 0.0');
+      expect(handler.insertIndicator, isNull);
+      expect(handler.hoveredSegment, isNull);
+      expect(handler.hoveredNode, const NodeRef(0, 1));
+      expect(handler.cursorState, PathEditorCursorState.movePoint);
+
+      handler.handlePointerUp(const Offset(50, 40));
+    });
+
     test('inserting on a curve keeps the shape', () {
       final controller = PathEditorController.fromSvg(
         'M0 0C0 100 100 100 100 0',
