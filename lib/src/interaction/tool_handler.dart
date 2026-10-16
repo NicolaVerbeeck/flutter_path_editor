@@ -358,6 +358,10 @@ class PathEditorToolHandler extends ChangeNotifier {
     if (_activePointer != pointer) return;
     _resetPointerState();
     controller.cancelTransaction();
+    // The rollback can remove a node the hover still points at, such as one
+    // the pen tool just inserted.
+    final scene = _pointer;
+    _hover = scene == null ? const NoHit() : _hitTest(scene);
     notifyListeners();
   }
 

@@ -186,6 +186,23 @@ void main() {
       handler.handlePointerUp(const Offset(50, 40));
     });
 
+    test('cancelling the drag of an inserted node refreshes the hover', () {
+      final controller = PathEditorController.fromSvg(
+        'M0 0L100 0',
+        tool: PathTool.pen,
+      );
+      final handler = handlerFor(controller);
+
+      handler.handlePointerDown(const Offset(50, 2));
+      handler.handlePointerMove(const Offset(50, 40));
+      handler.handlePointerCancel();
+
+      expect(controller.svg, 'M0.0 0.0L100.0 0.0');
+      expect(handler.hover, const NoHit(),
+          reason: 'the inserted node the hover pointed at is gone');
+      expect(handler.hoveredNode, isNull);
+    });
+
     test('inserting on a curve keeps the shape', () {
       final controller = PathEditorController.fromSvg(
         'M0 0C0 100 100 100 100 0',
