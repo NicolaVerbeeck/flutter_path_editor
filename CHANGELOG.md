@@ -1,3 +1,8 @@
+## 1.1.1
+
+* The add point indicator no longer stays behind on the split segment while
+  the node the pen tool just inserted there is dragged.
+
 ## 1.1.0
 
 * `Shift` + `Delete` / `Backspace` cut the path at the selected points.

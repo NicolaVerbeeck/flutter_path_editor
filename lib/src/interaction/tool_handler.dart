@@ -155,8 +155,12 @@ class PathEditorToolHandler extends ChangeNotifier {
       };
 
   /// Where a node would be inserted if the user clicked now.
+  ///
+  /// Nothing can be inserted mid drag, so this is `null` while dragging.
   Offset? get insertIndicator {
-    if (controller.tool != PathTool.pen || !_behavior.insertOnSegmentClick) {
+    if (controller.tool != PathTool.pen ||
+        !_behavior.insertOnSegmentClick ||
+        isDragging) {
       return null;
     }
     return switch (_hover) {
@@ -354,6 +358,10 @@ class PathEditorToolHandler extends ChangeNotifier {
     if (_activePointer != pointer) return;
     _resetPointerState();
     controller.cancelTransaction();
+    // The rollback can remove a node the hover still points at, such as one
+    // the pen tool just inserted.
+    final scene = _pointer;
+    _hover = scene == null ? const NoHit() : _hitTest(scene);
     notifyListeners();
   }
 
@@ -504,6 +512,9 @@ class PathEditorToolHandler extends ChangeNotifier {
         controller.selection = controller.selection.selectOnly(inserted);
         _activeSegment = SegmentRef(inserted.subpath, inserted.node - 1);
         _callbacks.onNodeAdded?.call(inserted);
+        // The pointer now sits on the inserted node rather than the segment
+        // that was split, and the hover is not refreshed until release.
+        _hover = _hitTest(scene);
         _startMovingNode(inserted, scene, extendSubpath: false);
 
       case SegmentHit():
