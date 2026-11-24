@@ -19,6 +19,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  material_ui: ^1.11.1
 
 funding:
   - https://buymeacoffee.com/nicolaverbn
